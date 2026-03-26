@@ -32,7 +32,7 @@ Gem::Specification.new do |spec|
   spec.add_dependency "thor", "~> 1.5.0"
 
   # Database
-  spec.add_dependency "pg", "~> 1.6.3"
+  spec.add_dependency "sqlite-vec", "~> 0.1.7"
 
   # LLM
   spec.add_dependency "llm.rb", "~> 4.8.0"
