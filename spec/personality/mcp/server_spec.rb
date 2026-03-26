@@ -123,6 +123,79 @@ RSpec.describe Personality::MCP::Server do
     end
   end
 
+  describe "tool calls (extended)" do
+    def call_tool(name, arguments = {})
+      result = call("tools/call", {name: name, arguments: arguments})
+      JSON.parse(result[:content].first[:text])
+    end
+
+    it "handles memory.recall with subject filter" do
+      call_tool("memory.store", {subject: "alpha", content: "first"})
+      call_tool("memory.store", {subject: "beta", content: "second"})
+      content = call_tool("memory.recall", {query: "first", subject: "alpha", limit: 3})
+      expect(content).to have_key("memories")
+    end
+
+    it "handles memory.search with subject filter" do
+      call_tool("memory.store", {subject: "gamma", content: "data"})
+      content = call_tool("memory.search", {subject: "gamma", limit: 5})
+      expect(content["memories"]).to be_an(Array)
+    end
+
+    it "handles index.search with type and project" do
+      content = call_tool("index.search", {query: "test", type: "code", project: "myproj", limit: 5})
+      expect(content).to have_key("results")
+    end
+
+    it "handles index.clear with project and type" do
+      content = call_tool("index.clear", {project: "myproj", type: "code"})
+      expect(content).to have_key("cleared")
+    end
+
+    it "handles cart.use" do
+      call_tool("cart.create", {tag: "usetest", name: "UseTest"})
+      content = call_tool("cart.use", {tag: "usetest"})
+      expect(content["tag"]).to eq("usetest")
+    end
+
+    it "handles resource.read for memory://subjects" do
+      call_tool("memory.store", {subject: "res_test", content: "data"})
+      content = call_tool("resource.read", {uri: "memory://subjects"})
+      expect(content).to have_key("subjects")
+      expect(content["subjects"]).to be_an(Array)
+    end
+
+    it "handles resource.read for memory://stats" do
+      content = call_tool("resource.read", {uri: "memory://stats"})
+      expect(content).to have_key("total_memories")
+      expect(content).to have_key("total_subjects")
+    end
+
+    it "handles resource.read for memory://recent" do
+      call_tool("memory.store", {subject: "recent_test", content: "fresh"})
+      content = call_tool("resource.read", {uri: "memory://recent"})
+      expect(content).to have_key("memories")
+      expect(content["memories"].length).to be >= 1
+    end
+
+    it "handles resource.read for unknown URI" do
+      content = call_tool("resource.read", {uri: "memory://unknown"})
+      expect(content).to have_key("error")
+      expect(content["error"]).to include("Unknown resource")
+    end
+
+    it "handles cart.carts" do
+      content = call_tool("cart.carts")
+      expect(content).to have_key("carts")
+      expect(content["carts"]).to be_an(Array)
+    end
+
+    it "handles memory.store with metadata" do
+      content = call_tool("memory.store", {subject: "meta", content: "data", metadata: {"key" => "val"}})
+      expect(content["id"]).to be_a(Integer)
+    end
+  end
+
   describe "protocol" do
     it "returns server info on initialize" do
       # Already initialized in before, just verify a fresh call

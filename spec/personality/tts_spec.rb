@@ -127,6 +127,95 @@ RSpec.describe Personality::TTS do
       result = described_class.speak("hello", voice: "nonexistent_xyz")
       expect(result[:error]).to match(/Voice not found/)
     end
+
+    it "returns error when piper synthesis fails" do
+      allow(described_class).to receive(:find_voice).and_return("/fake/voice.onnx")
+      allow(described_class).to receive(:find_piper).and_return("/fake/piper")
+      allow(described_class).to receive(:stop_current)
+
+      status = instance_double(Process::Status, success?: false)
+      allow(Open3).to receive(:capture3).and_return(["", "synth error", status])
+
+      result = described_class.speak("hello")
+      expect(result[:error]).to match(/piper failed/)
+    end
+
+    it "returns error when no audio player found" do
+      allow(described_class).to receive(:find_voice).and_return("/fake/voice.onnx")
+      allow(described_class).to receive(:find_piper).and_return("/fake/piper")
+      allow(described_class).to receive(:stop_current)
+      allow(described_class).to receive(:player_command).and_return(nil)
+
+      status = instance_double(Process::Status, success?: true)
+      allow(Open3).to receive(:capture3).and_return(["", "", status])
+
+      result = described_class.speak("hello")
+      expect(result[:error]).to match(/No audio player/)
+    end
+
+    it "synthesizes and spawns player on success" do
+      allow(described_class).to receive(:find_voice).and_return("/fake/voice.onnx")
+      allow(described_class).to receive(:find_piper).and_return("/fake/piper")
+      allow(described_class).to receive(:stop_current)
+      allow(described_class).to receive(:player_command).and_return("afplay")
+
+      status = instance_double(Process::Status, success?: true)
+      allow(Open3).to receive(:capture3).and_return(["", "", status])
+      allow(described_class).to receive(:spawn).and_return(12345)
+      allow(described_class).to receive(:save_pid)
+
+      result = described_class.speak("hello")
+      expect(result[:speaking]).to be true
+      expect(result[:pid]).to eq(12345)
+    end
+
+    it "uses active_voice when none specified" do
+      allow(described_class).to receive(:find_voice).with("en_US-lessac-medium").and_return(nil)
+      allow(described_class).to receive(:stop_current)
+      allow(ENV).to receive(:fetch).with("PERSONALITY_VOICE", "en_US-lessac-medium")
+        .and_return("en_US-lessac-medium")
+
+      result = described_class.speak("hello")
+      expect(result[:error]).to match(/Voice not found/)
+    end
+  end
+
+  describe ".speak_and_wait" do
+    it "returns error result immediately" do
+      allow(described_class).to receive(:speak).and_return({error: "no voice"})
+      result = described_class.speak_and_wait("hello")
+      expect(result[:error]).to eq("no voice")
+    end
+
+    it "waits for process and clears PID" do
+      allow(described_class).to receive(:speak).and_return({speaking: true, voice: "test", pid: 99999})
+      allow(Process).to receive(:wait).with(99999)
+      allow(described_class).to receive(:clear_pid)
+
+      result = described_class.speak_and_wait("hello")
+      expect(result[:speaking]).to be false
+    end
+
+    it "handles ECHILD when process already exited" do
+      allow(described_class).to receive(:speak).and_return({speaking: true, voice: "test", pid: 99999})
+      allow(Process).to receive(:wait).and_raise(Errno::ECHILD)
+      allow(described_class).to receive(:clear_pid)
+
+      result = described_class.speak_and_wait("hello")
+      expect(result[:speaking]).to be true
+    end
+  end
+
+  describe ".stop_current" do
+    it "kills process and returns true" do
+      FileUtils.mkdir_p(tmp_data)
+      File.write(described_class::PID_FILE, Process.pid.to_s)
+
+      allow(Process).to receive(:kill).with("TERM", Process.pid)
+      allow(described_class).to receive(:clear_pid)
+
+      expect(described_class.stop_current).to be true
+    end
   end
 
   describe ".download_voice" do
@@ -138,6 +227,37 @@ RSpec.describe Personality::TTS do
     it "rejects invalid format" do
       result = described_class.download_voice("invalidname")
       expect(result[:error]).to match(/Invalid voice format/)
+    end
+
+    it "defaults quality to medium" do
+      stub_const("Personality::TTS::VOICES_DIR", tmp_data)
+      FileUtils.mkdir_p(tmp_data)
+
+      allow(described_class).to receive(:download_file)
+      allow(File).to receive(:size).and_call_original
+      allow(File).to receive(:size)
+        .with(File.join(tmp_data, "en_US-testvoice.onnx"))
+        .and_return(1024 * 1024 * 10)
+
+      result = described_class.download_voice("en_US-testvoice")
+      expect(result[:installed]).to be true
+    end
+
+    it "returns error when download fails" do
+      stub_const("Personality::TTS::VOICES_DIR", tmp_data)
+      FileUtils.mkdir_p(tmp_data)
+
+      allow(described_class).to receive(:download_file).and_raise(RuntimeError, "HTTP 404")
+
+      result = described_class.download_voice("en_US-fakevoice-medium")
+      expect(result[:error]).to include("Download failed")
+    end
+  end
+
+  describe ".list_voices" do
+    it "returns empty when voices dir does not exist" do
+      stub_const("Personality::TTS::VOICES_DIR", "/nonexistent/voices")
+      expect(described_class.list_voices).to eq([])
     end
   end
 end

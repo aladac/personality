@@ -143,6 +143,100 @@ RSpec.describe Personality::Hooks do
     end
   end
 
+  describe ".config" do
+    after { described_class.reset_config! }
+
+    it "returns defaults when no config file exists" do
+      described_class.reset_config!
+      stub_const("Personality::Hooks::CONFIG_FILE", "/nonexistent/hooks.toml")
+      cfg = described_class.config
+      expect(cfg[:max_length]).to eq(50)
+      expect(cfg[:preserve_fields]).to include("file_path", "cwd")
+      expect(cfg[:preserve_suffixes]).to include("_path", "_dir")
+    end
+
+    it "loads overrides from TOML config file" do
+      require "tempfile"
+      tmpfile = Tempfile.new(["hooks_cfg", ".toml"])
+      tmpfile.write(<<~TOML)
+        [truncation]
+        max_length = 100
+        preserve_fields = ["custom_field"]
+        preserve_suffixes = ["_custom"]
+      TOML
+      tmpfile.close
+
+      described_class.reset_config!
+      stub_const("Personality::Hooks::CONFIG_FILE", tmpfile.path)
+      cfg = described_class.config
+      expect(cfg[:max_length]).to eq(100)
+      expect(cfg[:preserve_fields]).to eq(["custom_field"])
+      expect(cfg[:preserve_suffixes]).to eq(["_custom"])
+    ensure
+      tmpfile&.unlink
+    end
+
+    it "uses defaults when TOML file is invalid" do
+      require "tempfile"
+      tmpfile = Tempfile.new(["hooks_bad", ".toml"])
+      tmpfile.write("not valid toml {{{{")
+      tmpfile.close
+
+      described_class.reset_config!
+      stub_const("Personality::Hooks::CONFIG_FILE", tmpfile.path)
+      cfg = described_class.config
+      expect(cfg[:max_length]).to eq(50)
+    ensure
+      tmpfile&.unlink
+    end
+
+    it "keeps defaults for missing truncation keys" do
+      require "tempfile"
+      tmpfile = Tempfile.new(["hooks_partial", ".toml"])
+      tmpfile.write("[truncation]\nmax_length = 75\n")
+      tmpfile.close
+
+      described_class.reset_config!
+      stub_const("Personality::Hooks::CONFIG_FILE", tmpfile.path)
+      cfg = described_class.config
+      expect(cfg[:max_length]).to eq(75)
+      # preserve_fields and preserve_suffixes should keep defaults
+      expect(cfg[:preserve_fields]).to include("file_path")
+    ensure
+      tmpfile&.unlink
+    end
+  end
+
+  describe ".process_value" do
+    it "handles short arrays without truncation marker" do
+      result = described_class.process_value("items", [1, 2, 3])
+      expect(result).to eq([1, 2, 3])
+    end
+
+    it "falls through to truncate for unknown types" do
+      obj = Object.new
+      allow(obj).to receive(:to_s).and_return("object_string" * 10)
+      result = described_class.process_value("key", obj)
+      expect(result.length).to eq(50)
+    end
+
+    it "handles false boolean" do
+      expect(described_class.process_value("k", false)).to be false
+    end
+
+    it "handles Float" do
+      expect(described_class.process_value("k", 3.14)).to eq(3.14)
+    end
+  end
+
+  describe ".log" do
+    it "silently handles write errors" do
+      stub_const("Personality::Hooks::LOG_FILE", "/nonexistent/dir/hooks.jsonl")
+      stub_const("Personality::Hooks::LOG_DIR", "/nonexistent/dir")
+      expect { described_class.log("ErrorEvent") }.not_to raise_error
+    end
+  end
+
   describe ".read_stdin_json" do
     it "returns nil when stdin is a tty" do
       allow($stdin).to receive(:tty?).and_return(true)
