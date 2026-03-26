@@ -55,8 +55,6 @@ jobs:
         run: |
           gem build personality.gemspec
           echo "GEM_FILE=$(ls personality-*.gem)" >> "$GITHUB_ENV"
-      - name: Push to RubyGems
-        uses: rubygems/release-gem@v1
       - name: Push to GitHub Packages
         run: |
           mkdir -p ~/.gem
@@ -72,3 +70,5 @@ jobs:
           gh release create "$tag" "$GEM_FILE" \
             --title "$tag" \
             --generate-notes
+      - name: Push to RubyGems
+        uses: rubygems/release-gem@v1
