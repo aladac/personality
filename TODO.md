@@ -45,14 +45,14 @@
 
 ## Phase 6: MCP Server
 
-- [ ] `mcp/server.rb` — JSON-RPC stdio transport, initialize, tools/list, tools/call
-- [ ] `mcp/memory_handler.rb` — memory/* tool definitions + dispatch
-- [ ] `mcp/index_handler.rb` — index/* tool definitions + dispatch
-- [ ] `mcp/cart_handler.rb` — cart/* tool definitions + dispatch
-- [ ] MCP resources — memory://subjects, memory://stats, memory://recent, memory://subject/{subject}
-- [ ] `exe/psn-mcp` — standalone MCP binary
-- [ ] `.mcp.json` template generation
-- [ ] Tests for MCP handlers
+- [x] `mcp/server.rb` — official `mcp` gem (0.9.1), stdio transport, define_tool API
+- [x] Memory tools — memory.store, memory.recall, memory.search, memory.forget, memory.list
+- [x] Index tools — index.code, index.docs, index.search, index.status, index.clear
+- [x] Cart tools — cart.list, cart.use, cart.create
+- [x] MCP resources — memory://subjects, memory://stats, memory://recent
+- [x] `exe/psn-mcp` — standalone MCP binary
+- [ ] `.mcp.json` template generation [deferred: trivial, can add to hooks install]
+- [x] Tests for MCP server (15 specs)
 
 ## Phase 7: Integration & Polish
 

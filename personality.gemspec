@@ -44,6 +44,9 @@ Gem::Specification.new do |spec|
   spec.add_dependency "tty-progressbar", "~> 0.18.3"
   spec.add_dependency "pastel", "~> 0.8.0"
 
+  # MCP
+  spec.add_dependency "mcp", "~> 0.9.1"
+
   # Config
   spec.add_dependency "toml-rb", "~> 4.1.0"
 
