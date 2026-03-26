@@ -6,6 +6,7 @@ require_relative "cli/context"
 require_relative "cli/cart"
 require_relative "cli/memory"
 require_relative "cli/tts"
+require_relative "cli/index"
 
 module Personality
   class CLI < Thor
@@ -42,6 +43,9 @@ module Personality
 
     desc "tts SUBCOMMAND", "Text-to-speech"
     subcommand "tts", Tts
+
+    desc "index SUBCOMMAND", "Code and doc indexing"
+    subcommand "index", Index
 
     def self.exit_on_failure?
       true

@@ -38,10 +38,10 @@
 
 ## Phase 5: Indexer
 
-- [ ] `indexer.rb` service — index_code, index_docs, search, status, clear
-- [ ] `indexer.rb` hook — re-index on Write/Edit (PostToolUse)
-- [ ] `cli/index.rb` — code, docs, search, status, clear, hook subcommands
-- [ ] Tests for indexer
+- [x] `indexer.rb` service — index_code, index_docs, search, status, clear, index_single_file
+- [x] `indexer.rb` hook — re-index on Write/Edit (PostToolUse)
+- [x] `cli/index.rb` — code, docs, search, status, clear, hook subcommands
+- [x] Tests for indexer
 
 ## Phase 6: MCP Server
 
