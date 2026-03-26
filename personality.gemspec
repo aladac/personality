@@ -29,20 +29,26 @@ Gem::Specification.new do |spec|
   spec.require_paths = ["lib"]
 
   # CLI
-  spec.add_dependency "thor", "~> 1.3"
+  spec.add_dependency "thor", "~> 1.5.0"
 
   # Database
-  spec.add_dependency "pg", "~> 1.5"
+  spec.add_dependency "pg", "~> 1.6.3"
 
   # LLM
-  spec.add_dependency "llm.rb", "~> 4.8"
+  spec.add_dependency "llm.rb", "~> 4.8.0"
 
   # Terminal output
-  spec.add_dependency "tty-table", "~> 0.12"
-  spec.add_dependency "tty-spinner", "~> 0.9"
-  spec.add_dependency "tty-progressbar", "~> 0.18"
-  spec.add_dependency "pastel", "~> 0.8"
+  spec.add_dependency "tty-table", "~> 0.12.0"
+  spec.add_dependency "tty-spinner", "~> 0.9.3"
+  spec.add_dependency "tty-progressbar", "~> 0.18.3"
+  spec.add_dependency "pastel", "~> 0.8.0"
 
   # Config
-  spec.add_dependency "toml-rb", "~> 3.0"
+  spec.add_dependency "toml-rb", "~> 4.1.0"
+
+  # Development
+  spec.add_development_dependency "irb", "~> 1.17.0"
+  spec.add_development_dependency "rake", "~> 13.3.1"
+  spec.add_development_dependency "rspec", "~> 3.13.2"
+  spec.add_development_dependency "standard", "~> 1.54.0"
 end
