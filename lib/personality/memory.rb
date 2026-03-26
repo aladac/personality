@@ -39,8 +39,8 @@ module Personality
 
       db = DB.connection
 
-      if subject
-        rows = db.execute(<<~SQL, [embedding.to_json, limit, cart_id, subject])
+      rows = if subject
+        db.execute(<<~SQL, [embedding.to_json, limit, cart_id, subject])
           SELECT m.id, m.subject, m.content, m.metadata, m.created_at, v.distance
           FROM vec_memories v
           INNER JOIN memories m ON m.id = v.memory_id
@@ -49,7 +49,7 @@ module Personality
           ORDER BY v.distance
         SQL
       else
-        rows = db.execute(<<~SQL, [embedding.to_json, limit, cart_id])
+        db.execute(<<~SQL, [embedding.to_json, limit, cart_id])
           SELECT m.id, m.subject, m.content, m.metadata, m.created_at, v.distance
           FROM vec_memories v
           INNER JOIN memories m ON m.id = v.memory_id
@@ -66,13 +66,13 @@ module Personality
     def search(subject: nil, limit: 20)
       db = DB.connection
 
-      if subject
-        rows = db.execute(
+      rows = if subject
+        db.execute(
           "SELECT id, subject, content, created_at FROM memories WHERE cart_id = ? AND subject LIKE ? ORDER BY created_at DESC LIMIT ?",
           [cart_id, "%#{subject}%", limit]
         )
       else
-        rows = db.execute(
+        db.execute(
           "SELECT id, subject, content, created_at FROM memories WHERE cart_id = ? ORDER BY created_at DESC LIMIT ?",
           [cart_id, limit]
         )

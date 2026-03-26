@@ -47,7 +47,7 @@ RSpec.describe Personality::Indexer do
     end
 
     it "skips non-code extensions" do
-      result = indexer.index_code(path: tmp_dir)
+      indexer.index_code(path: tmp_dir)
       db = Personality::DB.connection(path: tmp_db)
       paths = db.execute("SELECT DISTINCT path FROM code_chunks").map { |r| r["path"] }
       expect(paths.none? { |p| p.end_with?(".md") }).to be true

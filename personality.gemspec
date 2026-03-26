@@ -57,5 +57,6 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency "irb", "~> 1.17.0"
   spec.add_development_dependency "rake", "~> 13.3.1"
   spec.add_development_dependency "rspec", "~> 3.13.2"
+  spec.add_development_dependency "simplecov", "~> 0.22.0"
   spec.add_development_dependency "standard", "~> 1.54.0"
 end

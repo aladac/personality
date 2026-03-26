@@ -410,20 +410,20 @@ module Personality
           cart = Personality::Cart.active
 
           result = case uri
-            when "memory://subjects"
-              rows = db.execute("SELECT subject, COUNT(*) AS count FROM memories WHERE cart_id = ? GROUP BY subject ORDER BY count DESC", [cart[:id]])
-              {subjects: rows.map { |r| {subject: r["subject"], count: r["count"]} }}
-            when "memory://stats"
-              total = db.execute("SELECT COUNT(*) AS c FROM memories WHERE cart_id = ?", [cart[:id]]).dig(0, "c") || 0
-              subjects = db.execute("SELECT COUNT(DISTINCT subject) AS c FROM memories WHERE cart_id = ?", [cart[:id]]).dig(0, "c") || 0
-              dates = db.execute("SELECT MIN(created_at) AS oldest, MAX(created_at) AS newest FROM memories WHERE cart_id = ?", [cart[:id]]).first
-              {cart: cart[:tag], total_memories: total, total_subjects: subjects, oldest: dates&.fetch("oldest", nil), newest: dates&.fetch("newest", nil)}
-            when "memory://recent"
-              rows = db.execute("SELECT id, subject, content, created_at FROM memories WHERE cart_id = ? ORDER BY created_at DESC LIMIT 10", [cart[:id]])
-              {memories: rows.map { |r| {id: r["id"], subject: r["subject"], content: r["content"], created_at: r["created_at"]} }}
-            else
-              {error: "Unknown resource: #{uri}"}
-            end
+          when "memory://subjects"
+            rows = db.execute("SELECT subject, COUNT(*) AS count FROM memories WHERE cart_id = ? GROUP BY subject ORDER BY count DESC", [cart[:id]])
+            {subjects: rows.map { |r| {subject: r["subject"], count: r["count"]} }}
+          when "memory://stats"
+            total = db.execute("SELECT COUNT(*) AS c FROM memories WHERE cart_id = ?", [cart[:id]]).dig(0, "c") || 0
+            subjects = db.execute("SELECT COUNT(DISTINCT subject) AS c FROM memories WHERE cart_id = ?", [cart[:id]]).dig(0, "c") || 0
+            dates = db.execute("SELECT MIN(created_at) AS oldest, MAX(created_at) AS newest FROM memories WHERE cart_id = ?", [cart[:id]]).first
+            {cart: cart[:tag], total_memories: total, total_subjects: subjects, oldest: dates&.fetch("oldest", nil), newest: dates&.fetch("newest", nil)}
+          when "memory://recent"
+            rows = db.execute("SELECT id, subject, content, created_at FROM memories WHERE cart_id = ? ORDER BY created_at DESC LIMIT 10", [cart[:id]])
+            {memories: rows.map { |r| {id: r["id"], subject: r["subject"], content: r["content"], created_at: r["created_at"]} }}
+          else
+            {error: "Unknown resource: #{uri}"}
+          end
 
           ::MCP::Tool::Response.new([{type: "text", text: JSON.generate(result)}])
         end

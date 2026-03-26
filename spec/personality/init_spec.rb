@@ -116,7 +116,7 @@ RSpec.describe Personality::Init do
       FileUtils.touch(tmp_db)
       stub_const("Personality::Init::DB_PATH", tmp_db)
 
-      label, status = init.send(:setup_database)
+      _, status = init.send(:setup_database)
       expect(status).to eq(:exists)
     end
   end

@@ -110,12 +110,10 @@ module Personality
         return "Hello, I am #{name}."
       end
 
-      greeting = template
+      template
         .gsub("{{USER_ID}}", user_name || "User")
         .gsub("{{user}}", user_name || "User")
         .gsub("{{TIME_GREETING}}", time_greeting)
-
-      greeting
     end
 
     # Build a brief summary for display.
@@ -156,7 +154,7 @@ module Personality
       sub_groups = Hash.new { |h, k| h[k] = [] }
       memories.each do |mem|
         parts = mem.subject.split(".")
-        sub_cat = parts.length > 1 ? parts[1] : "general"
+        sub_cat = (parts.length > 1) ? parts[1] : "general"
         sub_groups[sub_cat] << mem
       end
 

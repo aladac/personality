@@ -209,7 +209,7 @@ module Personality
             info[:tag] || File.basename(path, ".pcart"),
             info[:version] || "-",
             info[:memory_count]&.to_s || "?",
-            File.size(path) > 1024 ? "#{(File.size(path) / 1024.0).round(1)} KB" : "#{File.size(path)} B"
+            (File.size(path) > 1024) ? "#{(File.size(path) / 1024.0).round(1)} KB" : "#{File.size(path)} B"
           ]
         end
 

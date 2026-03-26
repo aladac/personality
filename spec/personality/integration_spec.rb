@@ -119,7 +119,7 @@ RSpec.describe "Integration" do
       code_only[:results].each { |r| expect(r[:type]).to eq(:code) }
 
       # 7. Re-index is idempotent
-      code_result2 = indexer.index_code(path: tmp_dir, project: "test-proj")
+      indexer.index_code(path: tmp_dir, project: "test-proj")
       status2 = indexer.status(project: "test-proj")
       expect(status2[:code_index].first[:count]).to eq(status[:code_index].first[:count])
 

@@ -32,9 +32,9 @@ RSpec.describe Personality::MCP::Server do
   end
 
   describe "tool registration" do
-    it "registers 13 tools total" do
+    it "registers 18 tools total" do
       result = call("tools/list")
-      expect(result[:tools].length).to eq(13)
+      expect(result[:tools].length).to eq(18)
     end
 
     it "includes memory tools" do
@@ -128,7 +128,7 @@ RSpec.describe Personality::MCP::Server do
       # Already initialized in before, just verify a fresh call
       response = mcp.handle({jsonrpc: "2.0", id: 999, method: "initialize",
                              params: {protocolVersion: "2024-11-05", capabilities: {}, clientInfo: {name: "t", version: "1"}}})
-      expect(response[:result][:serverInfo][:name]).to eq("personality")
+      expect(response[:result][:serverInfo][:name]).to eq("core")
     end
   end
 end

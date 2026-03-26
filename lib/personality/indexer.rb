@@ -13,7 +13,11 @@ module Personality
     def index_code(path:, project: nil, extensions: nil)
       dir = File.expand_path(path)
       proj = project || File.basename(dir)
-      exts = extensions ? extensions.map { |e| e.start_with?(".") ? e : ".#{e}" }.to_set : CODE_EXTENSIONS
+      exts = if extensions
+        extensions.map { |e| e.start_with?(".") ? e : ".#{e}" }.to_set
+      else
+        CODE_EXTENSIONS
+      end
 
       index_files(dir, proj, exts, table: "code_chunks", vec_table: "vec_code", language: true)
     end
@@ -153,8 +157,8 @@ module Personality
     end
 
     def search_table(db, table, vec_table, embedding, project:, limit:, type:)
-      if project
-        rows = db.execute(<<~SQL, [embedding.to_json, limit, project])
+      rows = if project
+        db.execute(<<~SQL, [embedding.to_json, limit, project])
           SELECT c.id, c.path, c.content, c.project, v.distance
           FROM #{vec_table} v
           INNER JOIN #{table} c ON c.id = v.chunk_id
@@ -163,7 +167,7 @@ module Personality
           ORDER BY v.distance
         SQL
       else
-        rows = db.execute(<<~SQL, [embedding.to_json, limit])
+        db.execute(<<~SQL, [embedding.to_json, limit])
           SELECT c.id, c.path, c.content, c.project, v.distance
           FROM #{vec_table} v
           INNER JOIN #{table} c ON c.id = v.chunk_id

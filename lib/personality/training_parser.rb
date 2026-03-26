@@ -44,10 +44,10 @@ module Personality
       content = File.read(path, encoding: "utf-8")
 
       tag, version, memories, preferences = case ext
-        when ".yml", ".yaml" then parse_yaml(content)
-        when ".json", ".jsonld" then parse_json(content)
-        else raise ArgumentError, "Unsupported file format: #{ext}"
-        end
+      when ".yml", ".yaml" then parse_yaml(content)
+      when ".json", ".jsonld" then parse_json(content)
+      else raise ArgumentError, "Unsupported file format: #{ext}"
+      end
 
       TrainingDocument.new(
         source: path,

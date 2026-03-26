@@ -31,7 +31,7 @@ module Personality
         FileUtils.mkdir_p(DATA_DIR)
 
         # Synthesize to WAV
-        stdout, stderr, status = Open3.capture3(
+        _, stderr, status = Open3.capture3(
           piper_bin, "--model", model_path, "--output_file", WAV_FILE,
           stdin_data: text
         )

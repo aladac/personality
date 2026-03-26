@@ -116,7 +116,7 @@ module Personality
         return unless data
 
         transcript_path = data["transcript_path"]
-        return unless transcript_path && File.exist?(transcript_path)
+        nil unless transcript_path && File.exist?(transcript_path)
 
         # Extract learnings from transcript — placeholder for future implementation
         # For now, this is a no-op hook endpoint

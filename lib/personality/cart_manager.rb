@@ -21,7 +21,10 @@ module Personality
     end
 
     def to_hash
-      members.each_with_object({}) { |k, h| v = self[k]; h[k.to_s] = v unless v.nil? || v.empty? }
+      members.each_with_object({}) { |k, h|
+        v = self[k]
+        h[k.to_s] = v unless v.nil? || v.empty?
+      }
     end
   end
 
@@ -42,7 +45,7 @@ module Personality
     def self.from_hash(data)
       data ||= {}
       known = %w[identity tts]
-      extra = data.reject { |k, _| known.include?(k) }
+      extra = data.except(*known)
       new(
         identity: IdentityConfig.from_hash(data["identity"]),
         tts: TTSConfig.from_hash(data["tts"]),

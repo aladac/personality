@@ -1,5 +1,13 @@
 # frozen_string_literal: true
 
+require "simplecov"
+SimpleCov.start do
+  add_filter "/spec/"
+  add_filter "/vendor/"
+  enable_coverage :branch
+  minimum_coverage 0
+end
+
 require "personality"
 
 RSpec.configure do |config|

@@ -234,7 +234,7 @@ module Personality
     end
 
     def ensure_ollama_running
-      stdout, status = Open3.capture2e("ollama", "list")
+      _, status = Open3.capture2e("ollama", "list")
       return if status.success?
 
       puts "  #{pastel.yellow("starting")} ollama serve"
