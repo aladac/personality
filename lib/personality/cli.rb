@@ -15,6 +15,14 @@ module Personality
       puts "Version: #{Personality::VERSION}"
     end
 
+    desc "init", "Initialize personality environment"
+    option :yes, type: :boolean, default: false, aliases: "-y",
+      desc: "Skip confirmation prompts"
+    def init
+      require_relative "init"
+      Init.new(auto_yes: options[:yes]).run
+    end
+
     def self.exit_on_failure?
       true
     end

@@ -5,7 +5,7 @@ RSpec.describe Personality do
     expect(Personality::VERSION).not_to be nil
   end
 
-  it "does something useful" do
-    expect(false).to eq(true)
+  it "defines an Error class" do
+    expect(Personality::Error).to be < StandardError
   end
 end

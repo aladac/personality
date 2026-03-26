@@ -32,6 +32,7 @@ Gem::Specification.new do |spec|
   spec.add_dependency "thor", "~> 1.5.0"
 
   # Database
+  spec.add_dependency "sqlite3", "~> 2.9.2"
   spec.add_dependency "sqlite-vec", "~> 0.1.7"
 
   # LLM
