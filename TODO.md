@@ -56,9 +56,10 @@
 
 ## Phase 7: Integration & Polish
 
-- [ ] `psn hooks session-start` — load persona instructions + intro prompt
-- [ ] `psn hooks notification` — speak notifications via TTS
-- [ ] End-to-end test: init → store memory → recall → verify
-- [ ] End-to-end test: index code → search → verify results
+- [x] `psn hooks session-start` — load persona instructions + intro prompt
+- [x] `psn hooks notification` — speak notifications via TTS
+- [x] End-to-end test: init → store memory → recall → verify
+- [x] End-to-end test: index code → search → verify results
+- [x] End-to-end test: MCP server protocol → tools/call → resources/read
 - [ ] CLI help text and `--help` output review
 - [ ] README update with usage examples

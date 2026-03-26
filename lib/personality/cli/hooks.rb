@@ -33,11 +33,28 @@ module Personality
         Personality::Hooks.log("SubagentStop", data)
       end
 
-      desc "session-start", "SessionStart hook — log and output intro"
+      desc "session-start", "SessionStart hook — log, load persona, output intro"
       def session_start
         require_relative "../hooks"
+        require_relative "../cart"
+        require_relative "../db"
+
         data = Personality::Hooks.read_stdin_json
         Personality::Hooks.log("SessionStart", data)
+
+        begin
+          Personality::DB.migrate!
+          cart = Personality::Cart.active
+
+          if cart[:name] || cart[:tagline]
+            name = cart[:name] || cart[:tag]
+            puts "**Active Persona:** #{name}"
+            puts cart[:tagline] if cart[:tagline]
+            puts
+          end
+        rescue
+          # Silently continue if cart loading fails
+        end
       end
 
       desc "session-end", "SessionEnd hook — log"
@@ -61,11 +78,28 @@ module Personality
         Personality::Hooks.log("PreCompact", data)
       end
 
-      desc "notification", "Notification hook — log"
+      desc "notification", "Notification hook — log and speak via TTS"
       def notification
         require_relative "../hooks"
+        require_relative "../tts"
+
         data = Personality::Hooks.read_stdin_json
         Personality::Hooks.log("Notification", data)
+
+        return unless data
+
+        message = data["message"]
+        return if message.nil? || message.empty?
+
+        # Prepend project name for context
+        cwd = data["cwd"] || Dir.pwd
+        project = File.basename(cwd)
+        speech = "#{project}: #{message}"
+
+        Personality::TTS.stop_current
+        Personality::TTS.speak(speech)
+      rescue
+        # Silently continue if TTS fails
       end
 
       desc "install", "Generate hooks.json for Claude Code"
