@@ -47,6 +47,9 @@ Gem::Specification.new do |spec|
   # MCP
   spec.add_dependency "mcp", "~> 0.9.1"
 
+  # Cartridge packaging
+  spec.add_dependency "rubyzip", "~> 2.4.1"
+
   # Config
   spec.add_dependency "toml-rb", "~> 4.1.0"
 

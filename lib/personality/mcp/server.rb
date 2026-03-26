@@ -18,7 +18,7 @@ module Personality
 
       def initialize
         @server = ::MCP::Server.new(
-          name: "personality",
+          name: "core",
           version: Personality::VERSION
         )
         @server.server_context = {}
@@ -248,6 +248,120 @@ module Personality
         end
       end
 
+      # === Persona Tools ===
+
+      def register_persona_tools
+        @server.define_tool(
+          name: "cart.teach",
+          description: "Learn a persona from a training YAML file. Creates a .pcart cartridge and imports memories into the database.",
+          input_schema: {
+            type: "object",
+            properties: {
+              training_file: {type: "string", description: "Path to the training YAML file"}
+            },
+            required: %w[training_file]
+          }
+        ) do |training_file:, server_context:, **|
+          require_relative "../cart_manager"
+          manager = Personality::CartManager.new
+          cart = manager.create_from_training(training_file)
+          result = manager.import_memories(cart)
+          ::MCP::Tool::Response.new([{type: "text", text: JSON.generate({
+            tag: cart.tag,
+            name: cart.name,
+            version: cart.version,
+            memory_count: cart.memory_count,
+            voice: cart.voice,
+            cart_path: cart.path,
+            imported: result
+          })}])
+        end
+
+        @server.define_tool(
+          name: "cart.show",
+          description: "Show persona details and LLM instructions for a cartridge.",
+          input_schema: {
+            type: "object",
+            properties: {
+              tag: {type: "string", description: "Persona tag (e.g. bt7274). If omitted, shows active cart."}
+            }
+          }
+        ) do |server_context:, **opts|
+          require_relative "../cart_manager"
+          require_relative "../persona_builder"
+          manager = Personality::CartManager.new
+          tag = opts[:tag]
+
+          if tag
+            path = File.join(manager.carts_dir, "#{tag.downcase}.pcart")
+            raise "Cart not found: #{tag}" unless File.exist?(path)
+          else
+            carts = manager.list_carts
+            raise "No carts found" if carts.empty?
+            path = carts.first
+          end
+
+          cart = manager.load_cart(path)
+          builder = Personality::PersonaBuilder.new
+          identity = cart.preferences&.identity
+
+          ::MCP::Tool::Response.new([{type: "text", text: JSON.generate({
+            tag: cart.tag,
+            name: cart.name,
+            version: cart.version,
+            type: identity&.type,
+            source: identity&.source,
+            tagline: identity&.tagline,
+            voice: cart.voice,
+            memory_count: cart.memory_count,
+            summary: builder.build_summary(cart),
+            instructions: builder.build_instructions(cart)
+          })}])
+        end
+
+        @server.define_tool(
+          name: "cart.instructions",
+          description: "Get the LLM persona instructions for the active or specified cart. Returns markdown formatted character instructions.",
+          input_schema: {
+            type: "object",
+            properties: {
+              tag: {type: "string", description: "Persona tag (optional, uses first available if omitted)"}
+            }
+          }
+        ) do |server_context:, **opts|
+          require_relative "../cart_manager"
+          require_relative "../persona_builder"
+          manager = Personality::CartManager.new
+          tag = opts[:tag]
+
+          if tag
+            path = File.join(manager.carts_dir, "#{tag.downcase}.pcart")
+            raise "Cart not found: #{tag}" unless File.exist?(path)
+          else
+            carts = manager.list_carts
+            raise "No carts found" if carts.empty?
+            path = carts.first
+          end
+
+          cart = manager.load_cart(path)
+          builder = Personality::PersonaBuilder.new
+          instructions = builder.build_instructions(cart)
+
+          ::MCP::Tool::Response.new([{type: "text", text: instructions}])
+        end
+
+        @server.define_tool(
+          name: "cart.carts",
+          description: "List available .pcart cartridge files with their metadata.",
+          input_schema: {type: "object", properties: {}}
+        ) do |server_context:, **|
+          require_relative "../cart_manager"
+          manager = Personality::CartManager.new
+          carts = manager.list_carts.map { |p| manager.cart_info(p).merge(path: p) }
+          ::MCP::Tool::Response.new([{type: "text", text: JSON.generate({carts: carts})}])
+        end
+      end
+
       # === Resources ===
 
       def register_resources
@@ -284,6 +398,7 @@ module Personality
         register_memory_tools
         register_index_tools
         register_cart_tools
+        register_persona_tools
       end
 
       def read_memory_resource(uri)
