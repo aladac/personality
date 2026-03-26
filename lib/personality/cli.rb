@@ -5,6 +5,7 @@ require_relative "cli/hooks"
 require_relative "cli/context"
 require_relative "cli/cart"
 require_relative "cli/memory"
+require_relative "cli/tts"
 
 module Personality
   class CLI < Thor
@@ -38,6 +39,9 @@ module Personality
 
     desc "memory SUBCOMMAND", "Persistent memory"
     subcommand "memory", Memory
+
+    desc "tts SUBCOMMAND", "Text-to-speech"
+    subcommand "tts", Tts
 
     def self.exit_on_failure?
       true

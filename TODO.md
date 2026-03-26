@@ -30,11 +30,11 @@
 
 ## Phase 4: TTS
 
-- [ ] `tts.rb` service — piper synthesis, playback, PID tracking, voice resolution
-- [ ] TTS interrupt protocol — natural stop flag, interrupt-check logic
-- [ ] `cli/tts.rb` — speak, stop, mark-natural-stop, interrupt-check, voices, download, test, current, characters
-- [ ] Voice download from HuggingFace (piper-voices repo)
-- [ ] Tests for TTS service
+- [x] `tts.rb` service — piper synthesis, playback, PID tracking, voice resolution
+- [x] TTS interrupt protocol — natural stop flag, interrupt-check logic
+- [x] `cli/tts.rb` — speak, stop, mark-natural-stop, interrupt-check, voices, download, test, current
+- [x] Voice download from HuggingFace (piper-voices repo)
+- [x] Tests for TTS service
 
 ## Phase 5: Indexer
 
