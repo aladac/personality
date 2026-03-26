@@ -69,7 +69,8 @@ RSpec.describe Personality::DB do
 
     it "sets schema version to latest" do
       described_class.migrate!(path: tmp_db)
-      expect(described_class.current_version).to eq(Personality::DB::SCHEMA_VERSION)
+      db = described_class.connection(path: tmp_db)
+      expect(described_class.current_version(db)).to eq(Personality::DB::SCHEMA_VERSION)
     end
 
     it "is idempotent" do

@@ -6,11 +6,19 @@ require "tmpdir"
 RSpec.describe Personality::TTS do
   let(:tmp_data) { File.join(Dir.tmpdir, "psn_tts_test_#{$$}_#{rand(10000)}") }
 
+  let(:tmp_voices) { File.join(tmp_data, "voices") }
+
   before do
     stub_const("Personality::TTS::DATA_DIR", tmp_data)
+    stub_const("Personality::TTS::VOICES_DIR", tmp_voices)
     stub_const("Personality::TTS::PID_FILE", File.join(tmp_data, "tts.pid"))
     stub_const("Personality::TTS::WAV_FILE", File.join(tmp_data, "tts_current.wav"))
     stub_const("Personality::TTS::NATURAL_STOP_FLAG", File.join(tmp_data, "tts_natural_stop"))
+
+    # Create fake voice files for tests
+    FileUtils.mkdir_p(tmp_voices)
+    FileUtils.touch(File.join(tmp_voices, "bt7274.onnx"))
+    FileUtils.touch(File.join(tmp_voices, "en_US-lessac-medium.onnx"))
   end
 
   after do
