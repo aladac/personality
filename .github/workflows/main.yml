@@ -5,7 +5,7 @@ on:
     branches:
       - main
     tags:
-      - 'v*'
+      - "v*"
 
   pull_request:
 
@@ -15,11 +15,11 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
-    name: Ruby ${{ matrix.ruby }}
+    name: test (ruby ${{ matrix.ruby }})
     strategy:
       matrix:
         ruby:
-          - '4.0.2'
+          - "4.0.2"
 
     steps:
       - uses: actions/checkout@v6
@@ -48,7 +48,7 @@ jobs:
       - name: Set up Ruby
         uses: ruby/setup-ruby@v1
         with:
-          ruby-version: '4.0.2'
+          ruby-version: "4.0.2"
           bundler-cache: true
       - name: Build gem
         run: gem build personality.gemspec
