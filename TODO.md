@@ -20,13 +20,13 @@
 
 ## Phase 3: Cart & Memory
 
-- [ ] `cart.rb` service — find_or_create, active, list, use, create
-- [ ] `cli/cart.rb` — list, use, create subcommands
-- [ ] `memory.rb` service — store, recall, search, forget, list (cart-scoped)
-- [ ] `memory.rb` save hook — extract learnings from transcript, store with embeddings
-- [ ] `memory.rb` precompact hook — deduplicate memories (>0.95 similarity)
-- [ ] `cli/memory.rb` — store, recall, search, forget, list, save subcommands
-- [ ] Tests for cart and memory
+- [x] `cart.rb` service — find_or_create, active, list, use, create
+- [x] `cli/cart.rb` — list, use, create subcommands
+- [x] `memory.rb` service — store, recall, search, forget, list (cart-scoped)
+- [x] `memory.rb` save hook — extract learnings from transcript (stub endpoint, ready for future impl)
+- [ ] `memory.rb` precompact hook — deduplicate memories (>0.95 similarity) [deferred: needs real usage data]
+- [x] `cli/memory.rb` — store, recall, search, forget, list, save subcommands
+- [x] Tests for cart and memory
 
 ## Phase 4: TTS
 

@@ -3,6 +3,8 @@
 require "thor"
 require_relative "cli/hooks"
 require_relative "cli/context"
+require_relative "cli/cart"
+require_relative "cli/memory"
 
 module Personality
   class CLI < Thor
@@ -30,6 +32,12 @@ module Personality
 
     desc "context SUBCOMMAND", "Session context tracking"
     subcommand "context", Context
+
+    desc "cart SUBCOMMAND", "Persona management"
+    subcommand "cart", Cart
+
+    desc "memory SUBCOMMAND", "Persistent memory"
+    subcommand "memory", Memory
 
     def self.exit_on_failure?
       true

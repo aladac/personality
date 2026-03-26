@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require "fileutils"
 require "sqlite3"
 require "sqlite_vec"
 
