@@ -89,8 +89,15 @@ RSpec.describe Personality::Init do
   end
 
   describe "setup_database" do
+    let(:tmp_db) { File.join(Dir.tmpdir, "psn_init_test_#{$$}_#{rand(10000)}.db") }
+
+    after do
+      Personality::DB.reset!
+      FileUtils.rm_f(tmp_db)
+    end
+
     it "creates database and schema in a temp path" do
-      tmp_db = File.join(Dir.tmpdir, "psn_init_test_#{$$}.db")
+      stub_const("Personality::DB::DB_PATH", tmp_db)
       stub_const("Personality::Init::DB_PATH", tmp_db)
 
       label, status = init.send(:setup_database)
@@ -99,24 +106,18 @@ RSpec.describe Personality::Init do
       expect(status).to eq(:installed)
       expect(File.exist?(tmp_db)).to be true
 
-      # Verify schema
-      db = SQLite3::Database.new(tmp_db)
-      tables = db.execute("SELECT name FROM sqlite_master WHERE type='table'").flatten
-      expect(tables).to include("embeddings", "schema_version")
-      db.close
-
-      FileUtils.rm_f(tmp_db)
+      # Verify v2 schema
+      db = Personality::DB.connection(path: tmp_db)
+      tables = db.execute("SELECT name FROM sqlite_master WHERE type='table'").map { |r| r["name"] || r[0] }
+      expect(tables).to include("carts", "memories", "schema_version")
     end
 
     it "reports exists when database already present" do
-      tmp_db = File.join(Dir.tmpdir, "psn_init_test_exists_#{$$}.db")
       FileUtils.touch(tmp_db)
       stub_const("Personality::Init::DB_PATH", tmp_db)
 
       label, status = init.send(:setup_database)
       expect(status).to eq(:exists)
-
-      FileUtils.rm_f(tmp_db)
     end
   end
 end

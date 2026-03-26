@@ -2,14 +2,13 @@
 
 require "open3"
 require "fileutils"
-require "sqlite3"
-require "sqlite_vec"
 require "pastel"
 require "tty-spinner"
+require_relative "db"
 
 module Personality
   class Init
-    DB_PATH = File.join(Dir.home, ".local", "share", "personality", "main.db")
+    DB_PATH = DB::DB_PATH
 
     attr_reader :pastel, :auto_yes
 
@@ -55,33 +54,7 @@ module Personality
 
       spinner = spin("Creating database")
       begin
-        FileUtils.mkdir_p(File.dirname(DB_PATH))
-        require "sqlite_vec"
-
-        db = SQLite3::Database.new(DB_PATH)
-        db.enable_load_extension(true)
-        SqliteVec.load(db)
-        db.enable_load_extension(false)
-
-        db.execute_batch(<<~SQL)
-          CREATE TABLE IF NOT EXISTS embeddings (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            source TEXT NOT NULL,
-            chunk TEXT NOT NULL,
-            metadata TEXT,
-            embedding FLOAT32_BLOB,
-            created_at TEXT DEFAULT (datetime('now'))
-          );
-
-          CREATE TABLE IF NOT EXISTS schema_version (
-            version INTEGER PRIMARY KEY,
-            applied_at TEXT DEFAULT (datetime('now'))
-          );
-
-          INSERT OR IGNORE INTO schema_version (version) VALUES (1);
-        SQL
-        db.close
-
+        DB.migrate!
         spinner.success(pastel.green("done"))
         [label, :installed]
       rescue => e

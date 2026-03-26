@@ -2,12 +2,12 @@
 
 ## Phase 1: Foundation
 
-- [ ] `db.rb` — singleton connection, sqlite-vec loading, migration runner
-- [ ] Schema v2 — carts, memories, code_chunks, doc_chunks, vec0 virtual tables
-- [ ] Update `init.rb` to use `db.rb` for schema creation (remove inline SQL)
-- [ ] `embedding.rb` — Ollama HTTP client, `generate(text)`, 8000 char truncation
-- [ ] `chunker.rb` — overlapping window splitter (2000/200)
-- [ ] Tests for db, embedding, chunker
+- [x] `db.rb` — singleton connection, sqlite-vec loading, migration runner
+- [x] Schema v2 — carts, memories, code_chunks, doc_chunks, vec0 virtual tables
+- [x] Update `init.rb` to use `db.rb` for schema creation (remove inline SQL)
+- [x] `embedding.rb` — Ollama HTTP client, `generate(text)`, 8000 char truncation
+- [x] `chunker.rb` — overlapping window splitter (2000/200)
+- [x] Tests for db, embedding, chunker
 
 ## Phase 2: Hooks & Context
 
