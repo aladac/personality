@@ -52,7 +52,9 @@ jobs:
           ruby-version: "4.0.2"
           bundler-cache: true
       - name: Build gem
-        run: gem build personality.gemspec
+        run: |
+          gem build personality.gemspec
+          echo "GEM_FILE=$(ls personality-*.gem)" >> "$GITHUB_ENV"
       - name: Push to RubyGems
         uses: rubygems/release-gem@v1
       - name: Push to GitHub Packages
@@ -61,12 +63,12 @@ jobs:
           echo "---" > ~/.gem/credentials
           echo ":github: Bearer ${{ secrets.GITHUB_TOKEN }}" >> ~/.gem/credentials
           chmod 0600 ~/.gem/credentials
-          gem push --key github --host https://rubygems.pkg.github.com/${{ github.repository_owner }} personality-*.gem
+          gem push --key github --host https://rubygems.pkg.github.com/${{ github.repository_owner }} "$GEM_FILE"
       - name: Create GitHub Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           tag="${GITHUB_REF#refs/tags/}"
-          gh release create "$tag" personality-*.gem \
+          gh release create "$tag" "$GEM_FILE" \
             --title "$tag" \
             --generate-notes
