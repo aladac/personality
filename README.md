@@ -1,35 +1,114 @@
 # Personality
 
-TODO: Delete this and the text below, and describe your gem
+Infrastructure layer for [Claude Code](https://docs.anthropic.com/en/docs/claude-code): persistent memory with vector search, code/doc indexing, TTS, persona management, and MCP server.
 
-Welcome to your new gem! In this directory, you'll find the files you need to be able to package up your Ruby library into a gem. Put your Ruby code in the file `lib/personality`. To experiment with that code, run `bin/console` for an interactive prompt.
+[![Gem Version](https://badge.fury.io/rb/personality.svg)](https://rubygems.org/gems/personality)
+[![CI](https://github.com/aladac/personality/actions/workflows/main.yml/badge.svg)](https://github.com/aladac/personality/actions/workflows/main.yml)
+
+## Features
+
+- **Memory** — Cart-scoped persistent memory with vector similarity search
+- **Code/Doc Indexing** — Semantic search across codebases and documentation
+- **TTS** — Text-to-speech via piper-tts with voice management
+- **Personas** — Cartridge-based persona system with identity, preferences, and memories
+- **MCP Server** — 18 tools and 3 resources over stdio transport
 
 ## Installation
 
-TODO: Replace `UPDATE_WITH_YOUR_GEM_NAME_IMMEDIATELY_AFTER_RELEASE_TO_RUBYGEMS_ORG` with your gem name right after releasing it to RubyGems.org. Please do not do it earlier due to security reasons. Alternatively, replace this section with instructions to install your gem from git if you don't plan to release to RubyGems.org.
-
-Install the gem and add to the application's Gemfile by executing:
-
 ```bash
-bundle add UPDATE_WITH_YOUR_GEM_NAME_IMMEDIATELY_AFTER_RELEASE_TO_RUBYGEMS_ORG
+gem install personality
 ```
 
-If bundler is not being used to manage dependencies, install the gem by executing:
+Or add to your Gemfile:
 
-```bash
-gem install UPDATE_WITH_YOUR_GEM_NAME_IMMEDIATELY_AFTER_RELEASE_TO_RUBYGEMS_ORG
+```ruby
+gem "personality"
 ```
+
+### Dependencies
+
+| Dependency | Purpose |
+|------------|---------|
+| [Ollama](https://ollama.com) | Embeddings (nomic-embed-text) |
+| [piper-tts](https://github.com/rhasspy/piper) | Text-to-speech synthesis |
+| SQLite | Database (bundled via sqlite3 gem) |
 
 ## Usage
 
-TODO: Write usage instructions here
+### CLI
+
+```bash
+psn help                          # Show all commands
+psn memory store SUBJECT CONTENT  # Store a memory
+psn memory recall QUERY           # Recall by similarity
+psn index code ./src              # Index code for search
+psn index search "auth handler"   # Semantic code search
+psn tts speak "Hello world"       # Speak text aloud
+psn cart list                     # List personas
+```
+
+### MCP Server
+
+Start the MCP server for Claude Code integration:
+
+```bash
+psn-mcp
+```
+
+Tools use dot notation: `memory.store`, `memory.recall`, `index.search`, `cart.use`, etc.
+
+### As a Claude Code Plugin
+
+Add to your Claude Code `settings.json`:
+
+```json
+{
+  "plugins": ["personality"]
+}
+```
+
+## Architecture
+
+Service objects hold all logic. CLI and MCP are thin wrappers.
+
+```
+lib/personality/
+  db.rb          # SQLite + sqlite-vec, migrations
+  embedding.rb   # Ollama HTTP client (nomic-embed-text, 768 dims)
+  chunker.rb     # Text splitting (2000 chars, 200 overlap)
+  memory.rb      # Vector memory (cart-scoped)
+  indexer.rb     # Code/doc indexing + semantic search
+  cart.rb        # Persona management
+  tts.rb         # Piper TTS synthesis + playback
+  mcp/server.rb  # MCP server (official mcp gem)
+```
 
 ## Development
 
-After checking out the repo, run `bin/setup` to install dependencies. Then, run `rake spec` to run the tests. You can also run `bin/console` for an interactive prompt that will allow you to experiment.
+```bash
+bundle install
+bundle exec rake          # Run tests + linter
+bundle exec rspec         # Tests only
+bundle exec standardrb    # Linter only
+```
 
-To install this gem onto your local machine, run `bundle exec rake install`. To release a new version, update the version number in `version.rb`, and then run `bundle exec rake release`, which will create a git tag for the version, push git commits and the created tag, and push the `.gem` file to [rubygems.org](https://rubygems.org).
+Tests stub external dependencies (Ollama, piper) — no services needed to run the suite.
 
-## Contributing
+## Releasing
 
-Bug reports and pull requests are welcome on GitHub at https://github.com/[USERNAME]/personality.
+Push a stable version tag to trigger the release workflow:
+
+```bash
+# Update lib/personality/version.rb, then:
+git commit -am "Bump version to X.Y.Z"
+git tag vX.Y.Z
+git push && git push origin vX.Y.Z
+```
+
+This publishes to [RubyGems](https://rubygems.org/gems/personality), [GitHub Packages](https://github.com/aladac/personality/packages), and creates a [GitHub Release](https://github.com/aladac/personality/releases) with the `.gem` attached.
+
+Pre-release versions (e.g. `v0.2.0.pre1`) are not published.
+
+## License
+
+[MIT](LICENSE.txt)
