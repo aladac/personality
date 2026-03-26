@@ -394,11 +394,47 @@ module Personality
         end
       end
 
+      def register_resource_tools
+        @server.define_tool(
+          name: "resource.read",
+          description: "Read an MCP resource by URI. Available resources: memory://subjects (subjects with counts), memory://stats (total memories, date range), memory://recent (last 10 memories).",
+          input_schema: {
+            type: "object",
+            properties: {
+              uri: {type: "string", description: "Resource URI (e.g. memory://subjects, memory://stats, memory://recent)"}
+            },
+            required: %w[uri]
+          }
+        ) do |uri:, server_context:, **|
+          db = Personality::DB.connection
+          cart = Personality::Cart.active
+
+          result = case uri
+            when "memory://subjects"
+              rows = db.execute("SELECT subject, COUNT(*) AS count FROM memories WHERE cart_id = ? GROUP BY subject ORDER BY count DESC", [cart[:id]])
+              {subjects: rows.map { |r| {subject: r["subject"], count: r["count"]} }}
+            when "memory://stats"
+              total = db.execute("SELECT COUNT(*) AS c FROM memories WHERE cart_id = ?", [cart[:id]]).dig(0, "c") || 0
+              subjects = db.execute("SELECT COUNT(DISTINCT subject) AS c FROM memories WHERE cart_id = ?", [cart[:id]]).dig(0, "c") || 0
+              dates = db.execute("SELECT MIN(created_at) AS oldest, MAX(created_at) AS newest FROM memories WHERE cart_id = ?", [cart[:id]]).first
+              {cart: cart[:tag], total_memories: total, total_subjects: subjects, oldest: dates&.fetch("oldest", nil), newest: dates&.fetch("newest", nil)}
+            when "memory://recent"
+              rows = db.execute("SELECT id, subject, content, created_at FROM memories WHERE cart_id = ? ORDER BY created_at DESC LIMIT 10", [cart[:id]])
+              {memories: rows.map { |r| {id: r["id"], subject: r["subject"], content: r["content"], created_at: r["created_at"]} }}
+            else
+              {error: "Unknown resource: #{uri}"}
+            end
+
+          ::MCP::Tool::Response.new([{type: "text", text: JSON.generate(result)}])
+        end
+      end
+
       def register_tools
         register_memory_tools
         register_index_tools
         register_cart_tools
         register_persona_tools
+        register_resource_tools
       end
 
       def read_memory_resource(uri)
