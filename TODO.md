@@ -11,12 +11,12 @@
 
 ## Phase 2: Hooks & Context
 
-- [ ] `hooks.rb` service — JSONL logging, field truncation, config via `logging.toml`
-- [ ] `cli/hooks.rb` — all 8 hook event subcommands (pre-tool-use, post-tool-use, stop, subagent-stop, session-start, session-end, user-prompt-submit, pre-compact, notification)
-- [ ] `psn hooks install` — generate `hooks.json` for Claude Code settings
-- [ ] `context.rb` service — session file-read tracking (`/tmp/psn-context/`)
-- [ ] `cli/context.rb` — track-read, check, list, clear subcommands
-- [ ] Tests for hooks and context
+- [x] `hooks.rb` service — JSONL logging, field truncation, config via `logging.toml`
+- [x] `cli/hooks.rb` — all 9 hook event subcommands (pre-tool-use, post-tool-use, stop, subagent-stop, session-start, session-end, user-prompt-submit, pre-compact, notification)
+- [x] `psn hooks install` — generate `hooks.json` for Claude Code settings
+- [x] `context.rb` service — session file-read tracking (`/tmp/psn-context/`)
+- [x] `cli/context.rb` — track-read, check, list, clear subcommands
+- [x] Tests for hooks and context
 
 ## Phase 3: Cart & Memory
 

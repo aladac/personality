@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 require "thor"
+require_relative "cli/hooks"
+require_relative "cli/context"
 
 module Personality
   class CLI < Thor
@@ -22,6 +24,12 @@ module Personality
       require_relative "init"
       Init.new(auto_yes: options[:yes]).run
     end
+
+    desc "hooks SUBCOMMAND", "Claude Code hooks"
+    subcommand "hooks", Hooks
+
+    desc "context SUBCOMMAND", "Session context tracking"
+    subcommand "context", Context
 
     def self.exit_on_failure?
       true
