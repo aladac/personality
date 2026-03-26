@@ -130,7 +130,7 @@ RSpec.describe Personality::PersonaBuilder do
       cart = make_cart(memories: [mem("identity.name", "Bot"), mem("self.trait", "brave")])
       result = builder.build_instructions(cart)
       # identity section is removed, not rendered as a separate heading
-      lines = result.lines.select { |l| l.include?("### Identity") }
+      result.lines.select { |l| l.include?("### Identity") }
       # Should be in SECTION_ORDER as self.identity, not as top-level identity
       expect(result).to include("### Personality Traits")
     end

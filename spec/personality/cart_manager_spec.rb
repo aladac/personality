@@ -37,8 +37,7 @@ RSpec.describe Personality::CartManager do
       path = create_pcart("bot",
         memories: [{"subject" => "self.name", "content" => "Bot"}],
         preferences: {"identity" => {"name" => "Bot", "type" => "ai"}},
-        version: "2.0"
-      )
+        version: "2.0")
 
       cart = manager.load_cart(path)
       expect(cart.tag).to eq("bot")
@@ -303,8 +302,7 @@ RSpec.describe Personality::CartManager do
     it "returns tag, version, and memory_count" do
       path = create_pcart("info",
         memories: [{"subject" => "a", "content" => "b"}],
-        version: "5.0"
-      )
+        version: "5.0")
 
       info = manager.cart_info(path)
       expect(info[:tag]).to eq("info")

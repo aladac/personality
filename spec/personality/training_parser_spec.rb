@@ -349,7 +349,7 @@ RSpec.describe Personality::TrainingParser do
     end
 
     it "returns invalid for bad file" do
-      valid, message = parser.validate("/nonexistent.yml")
+      valid, _ = parser.validate("/nonexistent.yml")
       expect(valid).to be false
     end
   end
