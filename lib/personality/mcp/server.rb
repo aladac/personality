@@ -436,6 +436,45 @@ module Personality
         register_persona_tools
         register_resource_tools
         register_messaging_tools
+        register_shell_tools
+      end
+
+      # === Shell Tools ===
+
+      def register_shell_tools
+        @server.define_tool(
+          name: "shell_exec",
+          description: "Execute a shell command on junkpile (Ubuntu x86_64). Returns stdout, stderr, and exit code.",
+          input_schema: {
+            type: "object",
+            properties: {
+              command: {type: "string", description: "Shell command to execute"},
+              timeout: {type: "integer", description: "Timeout in seconds (default: 60, max: 300)"},
+              cwd: {type: "string", description: "Working directory (default: home)"}
+            },
+            required: %w[command]
+          }
+        ) do |command:, server_context:, **opts|
+          require "open3"
+
+          timeout = [opts[:timeout] || 60, 300].min
+          cwd = opts[:cwd] || ENV["HOME"]
+
+          # Wrap with timeout
+          full_cmd = "timeout #{timeout} bash -c #{command.shellescape}"
+
+          stdout, stderr, status = Open3.capture3(full_cmd, chdir: cwd)
+
+          result = {
+            command: command,
+            cwd: cwd,
+            exit_code: status.exitstatus,
+            stdout: stdout,
+            stderr: stderr,
+            timed_out: status.exitstatus == 124
+          }
+          ::MCP::Tool::Response.new([{type: "text", text: JSON.generate(result)}])
+        end
       end
 
       # === Messaging Tools ===
