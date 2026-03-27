@@ -21,14 +21,24 @@ module Personality
 
       def call(env)
         request = Rack::Request.new(env)
+        origin = env["HTTP_ORIGIN"]
 
         # Handle CORS preflight
         if request.options?
           return cors_preflight_response(request)
         end
 
+        # Handle OAuth discovery endpoints (return 404 - no OAuth)
+        if request.path_info.start_with?("/.well-known/oauth")
+          return [404, add_cors_headers({"Content-Type" => "application/json"}, origin), ['{"error":"OAuth not supported"}']]
+        end
+
+        # Handle /register endpoint (return 404 - no dynamic registration)
+        if request.path_info == "/register"
+          return [404, add_cors_headers({"Content-Type" => "application/json"}, origin), ['{"error":"Registration not supported"}']]
+        end
+
         # Validate Origin (DNS rebinding protection)
-        origin = env["HTTP_ORIGIN"]
         unless valid_origin?(origin)
           return [403, {"Content-Type" => "application/json"}, ['{"error":"Invalid origin"}']]
         end
