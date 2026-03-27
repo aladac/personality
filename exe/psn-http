@@ -3,16 +3,26 @@
 
 require "personality"
 require "personality/mcp/rack_app"
+require "personality/mcp/oauth"
 require "rack"
 require "rack/handler/puma"
 
 host = ENV.fetch("PSN_HOST", "127.0.0.1")
 port = ENV.fetch("PSN_PORT", "8081").to_i
-api_key = ENV["PSN_API_KEY"]
+base_url = ENV.fetch("PSN_BASE_URL", "https://psn.saiden.dev")
 
-app = Personality::MCP::RackApp.new(api_key: api_key)
+# OAuth credentials
+client_id = Personality::MCP::OAuth::CLIENT_ID
+client_secret = Personality::MCP::OAuth::CLIENT_SECRET
+
+app = Personality::MCP::RackApp.new(base_url: base_url)
 
 puts "Starting PSN MCP HTTP server on #{host}:#{port}"
-puts "API key auth: #{api_key ? "enabled" : "disabled (set PSN_API_KEY)"}"
+puts "Base URL: #{base_url}"
+puts ""
+puts "OAuth Credentials (for claude.ai):"
+puts "  Client ID:     #{client_id}"
+puts "  Client Secret: #{client_secret}"
+puts ""
 
-Rack::Handler::Puma.run(app, Host: host, Port: port, Verbose: true)
+Rack::Handler::Puma.run(app, Host: host, Port: port, Verbose: false, Silent: true)

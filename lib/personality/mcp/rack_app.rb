@@ -4,6 +4,7 @@ require "rack"
 require "mcp"
 require "mcp/server/transports/streamable_http_transport"
 require_relative "server"
+require_relative "oauth"
 
 module Personality
   module MCP
@@ -13,8 +14,9 @@ module Personality
         https://console.anthropic.com
       ].freeze
 
-      def initialize(api_key: nil)
-        @api_key = api_key || ENV["PSN_API_KEY"]
+      def initialize(base_url: nil)
+        @base_url = base_url || ENV.fetch("PSN_BASE_URL", "https://psn.saiden.dev")
+        @oauth = OAuth.new(base_url: @base_url)
         @server = build_server
         @transport = ::MCP::Server::Transports::StreamableHTTPTransport.new(@server)
       end
@@ -28,27 +30,50 @@ module Personality
           return cors_preflight_response(request)
         end
 
-        # Handle OAuth discovery endpoints (return 404 - no OAuth)
-        if request.path_info.start_with?("/.well-known/oauth")
-          return [404, add_cors_headers({"Content-Type" => "application/json"}, origin), ['{"error":"OAuth not supported"}']]
+        # Route OAuth endpoints
+        case request.path_info
+        when "/.well-known/oauth-protected-resource"
+          return json_response(@oauth.protected_resource_metadata, origin)
+
+        when "/.well-known/oauth-authorization-server"
+          return json_response(@oauth.authorization_server_metadata, origin)
+
+        when "/register"
+          if request.post?
+            params = parse_body(request)
+            return json_response(@oauth.register(params), origin)
+          end
+
+        when "/authorize"
+          if request.get?
+            params = request.params
+            result = @oauth.authorize(params)
+            if result[:redirect_to]
+              return [302, {"Location" => result[:redirect_to]}, []]
+            else
+              return json_response(result, origin, status: 400)
+            end
+          end
+
+        when "/token"
+          if request.post?
+            params = parse_body(request)
+            result = @oauth.token(params)
+            status = result[:error] ? 400 : 200
+            return json_response(result, origin, status: status)
+          end
         end
 
-        # Handle /register endpoint (return 404 - no dynamic registration)
-        if request.path_info == "/register"
-          return [404, add_cors_headers({"Content-Type" => "application/json"}, origin), ['{"error":"Registration not supported"}']]
+        # For MCP endpoints, validate Bearer token
+        auth_header = env["HTTP_AUTHORIZATION"]
+        unless @oauth.validate_token(auth_header)
+          # Return 401 to trigger OAuth flow
+          return [401, add_cors_headers({"Content-Type" => "application/json", "WWW-Authenticate" => "Bearer"}, origin), ['{"error":"Unauthorized"}']]
         end
 
         # Validate Origin (DNS rebinding protection)
         unless valid_origin?(origin)
           return [403, {"Content-Type" => "application/json"}, ['{"error":"Invalid origin"}']]
-        end
-
-        # API key auth
-        if @api_key
-          provided_key = env["HTTP_X_API_KEY"]
-          unless secure_compare(@api_key, provided_key.to_s)
-            return [401, {"Content-Type" => "application/json"}, ['{"error":"Unauthorized"}']]
-          end
         end
 
         # Delegate to MCP transport
@@ -68,12 +93,33 @@ module Personality
         server.instance_variable_get(:@server)
       end
 
+      def parse_body(request)
+        body = request.body.read
+        request.body.rewind
+        return {} if body.empty?
+
+        content_type = request.content_type || ""
+        if content_type.include?("application/json")
+          JSON.parse(body)
+        else
+          # application/x-www-form-urlencoded
+          URI.decode_www_form(body).to_h
+        end
+      rescue JSON::ParserError
+        {}
+      end
+
+      def json_response(data, origin, status: 200)
+        headers = add_cors_headers({"Content-Type" => "application/json"}, origin)
+        [status, headers, [JSON.generate(data)]]
+      end
+
       def cors_preflight_response(request)
         origin = request.env["HTTP_ORIGIN"]
         headers = {
           "Access-Control-Allow-Origin" => valid_origin?(origin) ? origin : "",
           "Access-Control-Allow-Methods" => "GET, POST, DELETE, OPTIONS",
-          "Access-Control-Allow-Headers" => "Content-Type, Accept, X-API-Key, Mcp-Session-Id, MCP-Protocol-Version",
+          "Access-Control-Allow-Headers" => "Content-Type, Accept, Authorization, X-API-Key, Mcp-Session-Id, MCP-Protocol-Version",
           "Access-Control-Max-Age" => "86400"
         }
         [204, headers, []]
@@ -92,12 +138,6 @@ module Personality
         return true if origin.nil? # Non-browser clients
         return true if origin.start_with?("http://localhost", "http://127.0.0.1")
         ALLOWED_ORIGINS.include?(origin)
-      end
-
-      def secure_compare(a, b)
-        return false if a.empty? || b.empty?
-        return false if a.bytesize != b.bytesize
-        a.bytes.zip(b.bytes).reduce(0) { |acc, (x, y)| acc | (x ^ y) }.zero?
       end
     end
   end
