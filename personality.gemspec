@@ -46,6 +46,9 @@ Gem::Specification.new do |spec|
 
   # MCP
   spec.add_dependency "mcp", "~> 0.9.1"
+  spec.add_dependency "rack", "~> 3.1"
+  spec.add_dependency "rackup", "~> 2.2"
+  spec.add_dependency "puma", "~> 6.6"
 
   # Cartridge packaging
   spec.add_dependency "rubyzip", "~> 2.4.1"

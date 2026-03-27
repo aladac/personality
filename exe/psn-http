@@ -1,0 +1,18 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+require "personality"
+require "personality/mcp/rack_app"
+require "rack"
+require "rack/handler/puma"
+
+host = ENV.fetch("PSN_HOST", "127.0.0.1")
+port = ENV.fetch("PSN_PORT", "8081").to_i
+api_key = ENV["PSN_API_KEY"]
+
+app = Personality::MCP::RackApp.new(api_key: api_key)
+
+puts "Starting PSN MCP HTTP server on #{host}:#{port}"
+puts "API key auth: #{api_key ? "enabled" : "disabled (set PSN_API_KEY)"}"
+
+Rack::Handler::Puma.run(app, Host: host, Port: port, Verbose: true)

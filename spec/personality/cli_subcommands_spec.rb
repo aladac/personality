@@ -8,6 +8,7 @@ require "personality/cli"
 require "tmpdir"
 require "fileutils"
 require "stringio"
+require "tty-screen"
 
 RSpec.describe "CLI subcommands" do
   let(:tmp_db) { File.join(Dir.tmpdir, "psn_cli_test_#{$$}_#{rand(10000)}.db") }
@@ -124,6 +125,7 @@ RSpec.describe "CLI subcommands" do
 
     describe "#code" do
       it "indexes code and prints result" do
+        allow(TTY::Screen).to receive(:width).and_return(120)
         File.write(File.join(tmpdir, "test.rb"), "class Foo; end\n" * 20)
         output = capture_stdout { described_class.start(["code", tmpdir]) }
         expect(output).to include("chunks indexed")
@@ -132,6 +134,7 @@ RSpec.describe "CLI subcommands" do
 
     describe "#docs" do
       it "indexes docs and prints result" do
+        allow(TTY::Screen).to receive(:width).and_return(120)
         File.write(File.join(tmpdir, "test.md"), "# Heading\n\n" + ("content " * 100))
         output = capture_stdout { described_class.start(["docs", tmpdir]) }
         expect(output).to include("chunks indexed")
@@ -145,6 +148,7 @@ RSpec.describe "CLI subcommands" do
       end
 
       it "prints results when indexed" do
+        allow(TTY::Screen).to receive(:width).and_return(120)
         File.write(File.join(tmpdir, "test.rb"), "class FooSearch; end\n" * 20)
         capture_stdout { described_class.start(["code", tmpdir]) }
         output = capture_stdout { described_class.start(["search", "FooSearch"]) }
@@ -160,9 +164,9 @@ RSpec.describe "CLI subcommands" do
       end
 
       it "prints table when indexed" do
+        allow(TTY::Screen).to receive(:width).and_return(120)
         File.write(File.join(tmpdir, "test.rb"), "class StatusTest; end\n" * 20)
         capture_stdout { described_class.start(["code", tmpdir, "--project", "myproj"]) }
-        allow(TTY::Screen).to receive(:width).and_return(120)
         output = capture_stdout { described_class.start(["status"]) }
         expect(output).to include("myproj")
       end

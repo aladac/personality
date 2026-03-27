@@ -11,17 +11,35 @@ module Personality
         require_relative "../indexer"
         require_relative "../db"
         require "pastel"
-        require "tty-spinner"
+        require "tty-progressbar"
 
         DB.migrate!
         pastel = Pastel.new
-        spinner = TTY::Spinner.new("  :spinner Indexing code...", format: :dots)
-        spinner.auto_spin
+        bar = nil
 
-        result = Personality::Indexer.new.index_code(path: path, project: options[:project])
+        result = Personality::Indexer.new.index_code(path: path, project: options[:project]) do |file, current, total|
+          if bar.nil?
+            bar = TTY::ProgressBar.new(
+              "  Indexing [:bar] :current/:total :percent",
+              total: total,
+              width: 30,
+              complete: "█",
+              incomplete: "░",
+              hide_cursor: false,
+              clear: false
+            )
+          end
+          bar.current = current
+          # Show current file on line below progress bar, then cursor back up
+          filename = File.basename(file)
+          $stdout.print "\n  #{pastel.dim(filename.slice(0, 60).ljust(60))}\e[K\e[A\r"
+          $stdout.flush
+        end
 
-        spinner.success(pastel.green("done"))
-        puts "  #{pastel.bold(result[:project])}: #{result[:indexed]} chunks indexed"
+        # Clear filename line (move down, clear, move up) and finish
+        $stdout.print "\n\e[K\e[A"
+        bar&.finish
+        puts "  #{pastel.bold(result[:project])}: #{pastel.green(result[:indexed])} chunks indexed"
         if result[:errors].any?
           puts pastel.yellow("  Errors (#{result[:errors].length}):")
           result[:errors].each { |e| puts "    #{e}" }
@@ -34,17 +52,35 @@ module Personality
         require_relative "../indexer"
         require_relative "../db"
         require "pastel"
-        require "tty-spinner"
+        require "tty-progressbar"
 
         DB.migrate!
         pastel = Pastel.new
-        spinner = TTY::Spinner.new("  :spinner Indexing docs...", format: :dots)
-        spinner.auto_spin
+        bar = nil
 
-        result = Personality::Indexer.new.index_docs(path: path, project: options[:project])
+        result = Personality::Indexer.new.index_docs(path: path, project: options[:project]) do |file, current, total|
+          if bar.nil?
+            bar = TTY::ProgressBar.new(
+              "  Indexing [:bar] :current/:total :percent",
+              total: total,
+              width: 30,
+              complete: "█",
+              incomplete: "░",
+              hide_cursor: false,
+              clear: false
+            )
+          end
+          bar.current = current
+          # Show current file on line below progress bar, then cursor back up
+          filename = File.basename(file)
+          $stdout.print "\n  #{pastel.dim(filename.slice(0, 60).ljust(60))}\e[K\e[A\r"
+          $stdout.flush
+        end
 
-        spinner.success(pastel.green("done"))
-        puts "  #{pastel.bold(result[:project])}: #{result[:indexed]} chunks indexed"
+        # Clear filename line (move down, clear, move up) and finish
+        $stdout.print "\n\e[K\e[A"
+        bar&.finish
+        puts "  #{pastel.bold(result[:project])}: #{pastel.green(result[:indexed])} chunks indexed"
         if result[:errors].any?
           puts pastel.yellow("  Errors (#{result[:errors].length}):")
           result[:errors].each { |e| puts "    #{e}" }

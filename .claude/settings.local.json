@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__plugin_psn_core__index_clear",
+      "mcp__plugin_psn_core__index_code",
+      "mcp__plugin_psn_core__index_search"
+    ]
+  }
+}

@@ -9,8 +9,17 @@ module Personality
   class Indexer
     CODE_EXTENSIONS = %w[.py .rs .rb .js .ts .go .java .c .cpp .h].to_set.freeze
     DOC_EXTENSIONS = %w[.md .txt .rst .adoc].to_set.freeze
+    EXCLUDED_DIRS = %w[
+      target dist build out _build deps
+      node_modules vendor .bundle
+      __pycache__ .venv venv env .env
+      .git .hg .svn
+      coverage .nyc_output
+      .next .turbo .cargo .cache
+      tmp log logs
+    ].to_set.freeze
 
-    def index_code(path:, project: nil, extensions: nil)
+    def index_code(path:, project: nil, extensions: nil, &block)
       dir = File.expand_path(path)
       proj = project || File.basename(dir)
       exts = if extensions
@@ -19,14 +28,14 @@ module Personality
         CODE_EXTENSIONS
       end
 
-      index_files(dir, proj, exts, table: "code_chunks", vec_table: "vec_code", language: true)
+      index_files(dir, proj, exts, table: "code_chunks", vec_table: "vec_code", language: true, &block)
     end
 
-    def index_docs(path:, project: nil)
+    def index_docs(path:, project: nil, &block)
       dir = File.expand_path(path)
       proj = project || File.basename(dir)
 
-      index_files(dir, proj, DOC_EXTENSIONS, table: "doc_chunks", vec_table: "vec_docs", language: false)
+      index_files(dir, proj, DOC_EXTENSIONS, table: "doc_chunks", vec_table: "vec_docs", language: false, &block)
     end
 
     def search(query:, type: :all, project: nil, limit: 10)
@@ -91,13 +100,22 @@ module Personality
 
     private
 
-    def index_files(dir, project, extensions, table:, vec_table:, language:)
+    def index_files(dir, project, extensions, table:, vec_table:, language:, &block)
       indexed = 0
       errors = []
 
-      Dir.glob(File.join(dir, "**", "*")).each do |file_path|
-        next unless File.file?(file_path)
-        next unless extensions.include?(File.extname(file_path).downcase)
+      # Collect files first for progress reporting, excluding build/vendor dirs
+      files = Dir.glob(File.join(dir, "**", "*")).select do |file_path|
+        next false unless File.file?(file_path)
+        next false unless extensions.include?(File.extname(file_path).downcase)
+        # Skip files in excluded directories
+        path_parts = file_path.sub("#{dir}/", "").split("/")
+        !path_parts.any? { |part| EXCLUDED_DIRS.include?(part) }
+      end
+
+      total = files.size
+      files.each_with_index do |file_path, idx|
+        yield(file_path, idx + 1, total) if block_given?
 
         begin
           lang = language ? File.extname(file_path).downcase[1..] : nil
