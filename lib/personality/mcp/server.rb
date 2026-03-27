@@ -456,12 +456,13 @@ module Personality
           }
         ) do |command:, server_context:, **opts|
           require "open3"
+          require "shellwords"
 
           timeout = [opts[:timeout] || 60, 300].min
           cwd = opts[:cwd] || ENV["HOME"]
 
           # Wrap with timeout
-          full_cmd = "timeout #{timeout} bash -c #{command.shellescape}"
+          full_cmd = "timeout #{timeout} bash -c #{Shellwords.escape(command)}"
 
           stdout, stderr, status = Open3.capture3(full_cmd, chdir: cwd)
 
