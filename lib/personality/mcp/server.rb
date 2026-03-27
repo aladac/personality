@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 require "mcp"
-require "mcp/transports/stdio"
+require "mcp/server/transports/stdio_transport"
 require "json"
 require_relative "../db"
 require_relative "../memory"
@@ -27,7 +27,7 @@ module Personality
       end
 
       def start
-        transport = ::MCP::Transports::StdioTransport.new(@server)
+        transport = ::MCP::Server::Transports::StdioTransport.new(@server)
         transport.open
       end
 
