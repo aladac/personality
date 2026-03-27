@@ -40,7 +40,7 @@ module Personality
           token_endpoint: "#{base_url}/token",
           registration_endpoint: "#{base_url}/register",
           response_types_supported: ["code"],
-          grant_types_supported: ["authorization_code", "refresh_token"],
+          grant_types_supported: ["authorization_code", "client_credentials", "refresh_token"],
           code_challenge_methods_supported: ["S256"],
           token_endpoint_auth_methods_supported: ["client_secret_post", "none"]
         }
@@ -104,6 +104,8 @@ module Personality
           exchange_code(params)
         when "refresh_token"
           refresh_token(params)
+        when "client_credentials"
+          client_credentials(params)
         else
           { error: "unsupported_grant_type" }
         end
@@ -164,6 +166,18 @@ module Personality
         # Simple refresh - just generate new tokens
         # In production, validate refresh token
         generate_tokens(params["client_id"] || "unknown")
+      end
+
+      def client_credentials(params)
+        client_id = params["client_id"]
+        client_secret = params["client_secret"]
+
+        # Validate client credentials
+        unless client_id == CLIENT_ID && client_secret == CLIENT_SECRET
+          return { error: "invalid_client", error_description: "Invalid client credentials" }
+        end
+
+        generate_tokens(client_id)
       end
 
       def generate_tokens(client_id)
