@@ -41,7 +41,7 @@ module Personality
 
       def register_memory_tools
         @server.define_tool(
-          name: "memory.store",
+          name: "memory_store",
           description: "Store a memory with subject and content. Automatically generates embedding.",
           input_schema: {
             type: "object",
@@ -58,7 +58,7 @@ module Personality
         end
 
         @server.define_tool(
-          name: "memory.recall",
+          name: "memory_recall",
           description: "Recall memories by semantic similarity to a query.",
           input_schema: {
             type: "object",
@@ -75,7 +75,7 @@ module Personality
         end
 
         @server.define_tool(
-          name: "memory.search",
+          name: "memory_search",
           description: "Search memories by subject or metadata.",
           input_schema: {
             type: "object",
@@ -90,7 +90,7 @@ module Personality
         end
 
         @server.define_tool(
-          name: "memory.forget",
+          name: "memory_forget",
           description: "Delete a memory by ID.",
           input_schema: {
             type: "object",
@@ -105,7 +105,7 @@ module Personality
         end
 
         @server.define_tool(
-          name: "memory.list",
+          name: "memory_list",
           description: "List all memory subjects and counts.",
           input_schema: {type: "object", properties: {}}
         ) do |server_context:, **|
@@ -118,7 +118,7 @@ module Personality
 
       def register_index_tools
         @server.define_tool(
-          name: "index.code",
+          name: "index_code",
           description: "Index code files in a directory for semantic search.",
           input_schema: {
             type: "object",
@@ -135,7 +135,7 @@ module Personality
         end
 
         @server.define_tool(
-          name: "index.docs",
+          name: "index_docs",
           description: "Index documentation files for semantic search.",
           input_schema: {
             type: "object",
@@ -151,7 +151,7 @@ module Personality
         end
 
         @server.define_tool(
-          name: "index.search",
+          name: "index_search",
           description: "Search indexed code and docs by semantic similarity.",
           input_schema: {
             type: "object",
@@ -174,7 +174,7 @@ module Personality
         end
 
         @server.define_tool(
-          name: "index.status",
+          name: "index_status",
           description: "Show indexing status and statistics.",
           input_schema: {
             type: "object",
@@ -188,7 +188,7 @@ module Personality
         end
 
         @server.define_tool(
-          name: "index.clear",
+          name: "index_clear",
           description: "Clear index for a project or all.",
           input_schema: {
             type: "object",
@@ -207,7 +207,7 @@ module Personality
 
       def register_cart_tools
         @server.define_tool(
-          name: "cart.list",
+          name: "cart_list",
           description: "List all personas.",
           input_schema: {type: "object", properties: {}}
         ) do |server_context:, **|
@@ -216,7 +216,7 @@ module Personality
         end
 
         @server.define_tool(
-          name: "cart.use",
+          name: "cart_use",
           description: "Switch active persona.",
           input_schema: {
             type: "object",
@@ -231,7 +231,7 @@ module Personality
         end
 
         @server.define_tool(
-          name: "cart.create",
+          name: "cart_create",
           description: "Create a new persona.",
           input_schema: {
             type: "object",
@@ -252,7 +252,7 @@ module Personality
 
       def register_persona_tools
         @server.define_tool(
-          name: "cart.teach",
+          name: "cart_teach",
           description: "Learn a persona from a training YAML file. Creates a .pcart cartridge and imports memories into the database.",
           input_schema: {
             type: "object",
@@ -278,7 +278,7 @@ module Personality
         end
 
         @server.define_tool(
-          name: "cart.show",
+          name: "cart_show",
           description: "Show persona details and LLM instructions for a cartridge.",
           input_schema: {
             type: "object",
@@ -320,7 +320,7 @@ module Personality
         end
 
         @server.define_tool(
-          name: "cart.instructions",
+          name: "cart_instructions",
           description: "Get the LLM persona instructions for the active or specified cart. Returns markdown formatted character instructions.",
           input_schema: {
             type: "object",
@@ -351,7 +351,7 @@ module Personality
         end
 
         @server.define_tool(
-          name: "cart.carts",
+          name: "cart_carts",
           description: "List available .pcart cartridge files with their metadata.",
           input_schema: {type: "object", properties: {}}
         ) do |server_context:, **|
@@ -396,7 +396,7 @@ module Personality
 
       def register_resource_tools
         @server.define_tool(
-          name: "resource.read",
+          name: "resource_read",
           description: "Read an MCP resource by URI. Available resources: memory://subjects (subjects with counts), memory://stats (total memories, date range), memory://recent (last 10 memories).",
           input_schema: {
             type: "object",
