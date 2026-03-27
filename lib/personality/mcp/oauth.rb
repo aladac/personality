@@ -42,7 +42,7 @@ module Personality
           response_types_supported: ["code"],
           grant_types_supported: ["authorization_code", "client_credentials", "refresh_token"],
           code_challenge_methods_supported: ["S256"],
-          token_endpoint_auth_methods_supported: ["client_secret_post", "none"]
+          token_endpoint_auth_methods_supported: ["client_secret_basic", "client_secret_post", "none"]
         }
       end
 
@@ -96,8 +96,18 @@ module Personality
       end
 
       # POST /token - Token endpoint
-      def token(params)
+      def token(params, auth_header: nil)
         grant_type = params["grant_type"]
+
+        # Extract client credentials from Basic auth header if present
+        if auth_header&.start_with?("Basic ")
+          decoded = auth_header[6..].unpack1("m0") rescue nil
+          if decoded
+            basic_client_id, basic_client_secret = decoded.split(":", 2)
+            params["client_id"] ||= basic_client_id
+            params["client_secret"] ||= basic_client_secret
+          end
+        end
 
         case grant_type
         when "authorization_code"

@@ -58,7 +58,8 @@ module Personality
         when "/token"
           if request.post?
             params = parse_body(request)
-            result = @oauth.token(params)
+            auth_header = env["HTTP_AUTHORIZATION"]
+            result = @oauth.token(params, auth_header: auth_header)
             status = result[:error] ? 400 : 200
             return json_response(result, origin, status: status)
           end
