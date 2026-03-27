@@ -18,7 +18,7 @@ module Personality
         @base_url = base_url || ENV.fetch("PSN_BASE_URL", "https://psn.saiden.dev")
         @oauth = OAuth.new(base_url: @base_url)
         @server = build_server
-        @transport = ::MCP::Server::Transports::StreamableHTTPTransport.new(@server)
+        @transport = ::MCP::Server::Transports::StreamableHTTPTransport.new(@server, stateless: true)
       end
 
       def call(env)
