@@ -442,6 +442,8 @@ module Personality
 
       SIGNAL_ACCOUNT = "+48600965497" # Moto G52 - BT's comm array
       PILOT_NUMBER = "+48535329895"   # Adam's number
+      SIGNAL_CLI = "/home/linuxbrew/.linuxbrew/bin/signal-cli"
+      ADB = "/home/linuxbrew/.linuxbrew/bin/adb"
 
       def register_messaging_tools
         @server.define_tool(
@@ -462,7 +464,7 @@ module Personality
 
           # Escape message for shell
           escaped_message = message.gsub("'", "'\\''")
-          cmd = "signal-cli -a #{from} send -m '#{escaped_message}' #{to}"
+          cmd = "#{SIGNAL_CLI} -a #{from} send -m '#{escaped_message}' #{to}"
 
           output = `#{cmd} 2>&1`
           success = $?.success?
@@ -491,7 +493,7 @@ module Personality
           account = opts[:account] || SIGNAL_ACCOUNT
           timeout = opts[:timeout] || 5
 
-          cmd = "timeout #{timeout} signal-cli -a #{account} receive --json 2>&1"
+          cmd = "timeout #{timeout} #{SIGNAL_CLI} -a #{account} receive --json 2>&1"
           output = `#{cmd}`
 
           messages = []
@@ -538,7 +540,7 @@ module Personality
           escaped_to = to.gsub("+", "%2B")
 
           # Open SMS compose via ADB intent
-          cmd = "adb shell am start -a android.intent.action.SENDTO -d 'sms:#{escaped_to}' --es sms_body '#{escaped_message}'"
+          cmd = "#{ADB} shell am start -a android.intent.action.SENDTO -d 'sms:#{escaped_to}' --es sms_body '#{escaped_message}'"
           output = `#{cmd} 2>&1`
           success = $?.success?
 
