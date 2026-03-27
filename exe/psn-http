@@ -25,4 +25,4 @@ puts "  Client ID:     #{client_id}"
 puts "  Client Secret: #{client_secret}"
 puts ""
 
-Rack::Handler::Puma.run(app, Host: host, Port: port, Verbose: false, Silent: true)
+Rack::Handler::Puma.run(app, Host: host, Port: port, Verbose: true)
