@@ -435,6 +435,122 @@ module Personality
         register_cart_tools
         register_persona_tools
         register_resource_tools
+        register_messaging_tools
+      end
+
+      # === Messaging Tools ===
+
+      SIGNAL_ACCOUNT = "+48600965497" # Moto G52 - BT's comm array
+      PILOT_NUMBER = "+48535329895"   # Adam's number
+
+      def register_messaging_tools
+        @server.define_tool(
+          name: "signal_send",
+          description: "Send a Signal message. Default sends from BT's comm array (+48600965497) to Pilot (+48535329895).",
+          input_schema: {
+            type: "object",
+            properties: {
+              message: {type: "string", description: "Message text to send"},
+              to: {type: "string", description: "Recipient phone number (default: Pilot's number)"},
+              from: {type: "string", description: "Sender account (default: BT's comm array)"}
+            },
+            required: %w[message]
+          }
+        ) do |message:, server_context:, **opts|
+          from = opts[:from] || SIGNAL_ACCOUNT
+          to = opts[:to] || PILOT_NUMBER
+
+          # Escape message for shell
+          escaped_message = message.gsub("'", "'\\''")
+          cmd = "signal-cli -a #{from} send -m '#{escaped_message}' #{to}"
+
+          output = `#{cmd} 2>&1`
+          success = $?.success?
+
+          result = {
+            success: success,
+            from: from,
+            to: to,
+            message: message,
+            output: output.strip
+          }
+          ::MCP::Tool::Response.new([{type: "text", text: JSON.generate(result)}])
+        end
+
+        @server.define_tool(
+          name: "signal_receive",
+          description: "Check for incoming Signal messages on BT's comm array.",
+          input_schema: {
+            type: "object",
+            properties: {
+              account: {type: "string", description: "Account to check (default: BT's comm array)"},
+              timeout: {type: "integer", description: "Timeout in seconds (default: 5)"}
+            }
+          }
+        ) do |server_context:, **opts|
+          account = opts[:account] || SIGNAL_ACCOUNT
+          timeout = opts[:timeout] || 5
+
+          cmd = "timeout #{timeout} signal-cli -a #{account} receive --json 2>&1"
+          output = `#{cmd}`
+
+          messages = []
+          output.each_line do |line|
+            next if line.strip.empty?
+            begin
+              msg = JSON.parse(line)
+              if msg["envelope"] && msg["envelope"]["dataMessage"]
+                data = msg["envelope"]["dataMessage"]
+                messages << {
+                  from: msg["envelope"]["source"],
+                  timestamp: msg["envelope"]["timestamp"],
+                  message: data["message"],
+                  group: data["groupInfo"]&.dig("groupId")
+                }
+              end
+            rescue JSON::ParserError
+              # Skip non-JSON lines
+            end
+          end
+
+          result = {
+            account: account,
+            message_count: messages.length,
+            messages: messages
+          }
+          ::MCP::Tool::Response.new([{type: "text", text: JSON.generate(result)}])
+        end
+
+        @server.define_tool(
+          name: "sms_send",
+          description: "Send an SMS via Moto G52 (requires ADB). Opens SMS compose screen with pre-filled message.",
+          input_schema: {
+            type: "object",
+            properties: {
+              message: {type: "string", description: "SMS message text"},
+              to: {type: "string", description: "Recipient phone number"}
+            },
+            required: %w[message to]
+          }
+        ) do |message:, to:, server_context:, **|
+          # Escape for shell and Android intent
+          escaped_message = message.gsub("'", "'\\''").gsub('"', '\\"')
+          escaped_to = to.gsub("+", "%2B")
+
+          # Open SMS compose via ADB intent
+          cmd = "adb shell am start -a android.intent.action.SENDTO -d 'sms:#{escaped_to}' --es sms_body '#{escaped_message}'"
+          output = `#{cmd} 2>&1`
+          success = $?.success?
+
+          result = {
+            success: success,
+            to: to,
+            message: message,
+            note: "SMS compose screen opened on Moto. Manual send may be required.",
+            output: output.strip
+          }
+          ::MCP::Tool::Response.new([{type: "text", text: JSON.generate(result)}])
+        end
       end
 
       def read_memory_resource(uri)
