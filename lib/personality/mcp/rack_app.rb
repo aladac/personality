@@ -25,6 +25,9 @@ module Personality
         request = Rack::Request.new(env)
         origin = env["HTTP_ORIGIN"]
 
+        # Debug logging
+        warn "[MCP] #{request.request_method} #{request.path_info} Origin: #{origin.inspect}"
+
         # Handle CORS preflight
         if request.options?
           return cors_preflight_response(request)
@@ -63,6 +66,11 @@ module Personality
             status = result[:error] ? 400 : 200
             return json_response(result, origin, status: status)
           end
+        end
+
+        # Handle MCP endpoint at /mcp or root /
+        unless request.path_info == "/" || request.path_info == "/mcp"
+          return [404, add_cors_headers({"Content-Type" => "application/json"}, origin), ['{"error":"Not found"}']]
         end
 
         # For MCP endpoints, validate Bearer token
