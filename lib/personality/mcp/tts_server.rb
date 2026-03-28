@@ -45,12 +45,13 @@ module Personality
             type: "object",
             properties: {
               text: {type: "string", description: "Text to speak aloud"},
-              voice: {type: "string", description: "Voice model name (optional, uses active voice if omitted)"}
+              voice: {type: "string", description: "Voice model name (optional, uses active voice if omitted)"},
+              language: {type: "string", description: "Language code (e.g. 'en', 'pl'). Auto-detected if omitted."}
             },
             required: %w[text]
           }
         ) do |text:, server_context:, **opts|
-          result = Personality::TTS.speak(text, voice: opts[:voice])
+          result = Personality::TTS.speak(text, voice: opts[:voice], language: opts[:language])
           ::MCP::Tool::Response.new([{type: "text", text: JSON.generate(result)}])
         end
       end
@@ -85,7 +86,8 @@ module Personality
         ) do |server_context:, **|
           voice = Personality::TTS.active_voice
           installed = !Personality::TTS.find_voice(voice).nil?
-          ::MCP::Tool::Response.new([{type: "text", text: JSON.generate({voice: voice, installed: installed})}])
+          backend = Personality::TTS.backend
+          ::MCP::Tool::Response.new([{type: "text", text: JSON.generate({voice: voice, installed: installed, backend: backend})}])
         end
       end
 

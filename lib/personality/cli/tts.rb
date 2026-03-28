@@ -7,11 +7,12 @@ module Personality
     class Tts < Thor
       desc "speak TEXT", "Speak text aloud"
       option :voice, type: :string, aliases: "-v", desc: "Voice model name"
+      option :language, type: :string, aliases: "-l", desc: "Language code (en, pl)"
       def speak(text)
         require_relative "../tts"
         require "pastel"
 
-        result = Personality::TTS.speak_and_wait(text, voice: options[:voice])
+        result = Personality::TTS.speak_and_wait(text, voice: options[:voice], language: options[:language])
         if result[:error]
           puts Pastel.new.red(result[:error])
           exit 1
@@ -124,11 +125,37 @@ module Personality
 
         pastel = Pastel.new
         voice = Personality::TTS.active_voice
+        backend = Personality::TTS.backend
+
+        puts "#{pastel.bold("Backend:")} #{backend}"
         puts "#{pastel.bold("Voice:")} #{voice}"
         if Personality::TTS.find_voice(voice)
-          puts "#{pastel.green("✓")} Installed"
+          puts "#{pastel.green("✓")} Available"
         else
-          puts "#{pastel.yellow("!")} Not installed — run: psn tts download #{voice}"
+          if backend == "xtts"
+            puts "#{pastel.yellow("!")} Voice not found on XTTS host"
+          else
+            puts "#{pastel.yellow("!")} Not installed — run: psn tts download #{voice}"
+          end
+        end
+      end
+
+      desc "backend", "Show TTS backend info"
+      def backend
+        require_relative "../tts"
+        require "pastel"
+
+        pastel = Pastel.new
+        backend = Personality::TTS.backend
+
+        puts "#{pastel.bold("Backend:")} #{backend}"
+        if backend == "xtts"
+          puts "#{pastel.bold("Host:")} #{Personality::TTS::XTTS_HOST}"
+          puts "#{pastel.bold("Project:")} #{Personality::TTS::XTTS_PROJECT}"
+          puts pastel.dim("\nSet TTS_BACKEND=piper to use local piper")
+        else
+          puts "#{pastel.bold("Voices dir:")} #{Personality::TTS::VOICES_DIR}"
+          puts pastel.dim("\nSet TTS_BACKEND=xtts to use XTTS on junkpile")
         end
       end
 

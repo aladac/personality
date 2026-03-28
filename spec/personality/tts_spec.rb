@@ -14,6 +14,9 @@ RSpec.describe Personality::TTS do
     stub_const("Personality::TTS::PID_FILE", File.join(tmp_data, "tts.pid"))
     stub_const("Personality::TTS::WAV_FILE", File.join(tmp_data, "tts_current.wav"))
     stub_const("Personality::TTS::NATURAL_STOP_FLAG", File.join(tmp_data, "tts_natural_stop"))
+    # Force piper backend for tests
+    stub_const("Personality::TTS::BACKEND", "piper")
+    stub_const("Personality::TTS::DEFAULT_VOICE", "en_US-lessac-medium")
 
     # Create fake voice files for tests
     FileUtils.mkdir_p(tmp_voices)
