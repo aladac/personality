@@ -98,7 +98,9 @@ module Personality
 
       def build_server
         DB.migrate!
-        server = Server.new
+        # HTTP server defaults to :core mode (no indexer - that runs locally)
+        mode = ENV.fetch("PSN_MCP_MODE", "core").to_sym
+        server = Server.new(mode: mode)
         server.instance_variable_get(:@server)
       end
 

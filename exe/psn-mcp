@@ -4,4 +4,18 @@
 require "personality"
 require "personality/mcp/server"
 
-Personality::MCP::Server.run
+# Parse --mode argument
+mode = :all
+ARGV.each_with_index do |arg, i|
+  if arg == "--mode" && ARGV[i + 1]
+    mode = ARGV[i + 1].to_sym
+  elsif arg.start_with?("--mode=")
+    mode = arg.split("=", 2).last.to_sym
+  elsif arg == "--indexer-only"
+    mode = :indexer
+  elsif arg == "--core-only"
+    mode = :core
+  end
+end
+
+Personality::MCP::Server.run(mode: mode)

@@ -11,19 +11,32 @@ require_relative "../cart"
 module Personality
   module MCP
     class Server
-      def self.run
+      # Modes:
+      #   :all     - All tools (default)
+      #   :indexer - Only index_* tools (for local file indexing)
+      #   :core    - Only memory/cart tools (for remote/centralized)
+      VALID_MODES = %i[all indexer core].freeze
+
+      def self.run(mode: :all)
         DB.migrate!
-        new.start
+        new(mode: mode).start
       end
 
-      def initialize
+      def initialize(mode: :all)
+        @mode = VALID_MODES.include?(mode) ? mode : :all
+        server_name = case @mode
+                      when :indexer then "indexer"
+                      when :core then "core"
+                      else "personality"
+                      end
+
         @server = ::MCP::Server.new(
-          name: "core",
+          name: server_name,
           version: Personality::VERSION
         )
         @server.server_context = {}
         register_tools
-        register_resources
+        register_resources unless @mode == :indexer
       end
 
       def start
@@ -430,13 +443,27 @@ module Personality
       end
 
       def register_tools
-        register_memory_tools
-        register_index_tools
-        register_cart_tools
-        register_persona_tools
-        register_resource_tools
-        register_messaging_tools
-        register_shell_tools
+        case @mode
+        when :indexer
+          # Local indexing only - no memory/cart/messaging
+          register_index_tools
+        when :core
+          # Centralized services - no local file indexing
+          register_memory_tools
+          register_cart_tools
+          register_persona_tools
+          register_resource_tools
+          register_messaging_tools
+          register_shell_tools
+        else # :all
+          register_memory_tools
+          register_index_tools
+          register_cart_tools
+          register_persona_tools
+          register_resource_tools
+          register_messaging_tools
+          register_shell_tools
+        end
       end
 
       # === Shell Tools ===
