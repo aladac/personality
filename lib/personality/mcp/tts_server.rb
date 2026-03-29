@@ -40,18 +40,23 @@ module Personality
       def register_speak
         @server.define_tool(
           name: "speak",
-          description: "Speak text aloud using TTS. Synthesizes and plays audio in the background.",
+          description: "Speak text aloud using TTS. Synthesizes and plays audio in the background unless wait=true.",
           input_schema: {
             type: "object",
             properties: {
               text: {type: "string", description: "Text to speak aloud"},
               voice: {type: "string", description: "Voice model name (optional, uses active voice if omitted)"},
-              language: {type: "string", description: "Language code (e.g. 'en', 'pl'). Auto-detected if omitted."}
+              language: {type: "string", description: "Language code (e.g. 'en', 'pl'). Auto-detected if omitted."},
+              wait: {type: "boolean", description: "Wait for playback to complete before returning (default: false)"}
             },
             required: %w[text]
           }
         ) do |text:, server_context:, **opts|
-          result = Personality::TTS.speak(text, voice: opts[:voice], language: opts[:language])
+          result = if opts[:wait]
+            Personality::TTS.speak_and_wait(text, voice: opts[:voice], language: opts[:language])
+          else
+            Personality::TTS.speak(text, voice: opts[:voice], language: opts[:language])
+          end
           ::MCP::Tool::Response.new([{type: "text", text: JSON.generate(result)}])
         end
       end

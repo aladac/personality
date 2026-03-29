@@ -17,15 +17,16 @@ module Personality
 
     # XTTS configuration
     XTTS_HOST = ENV.fetch("XTTS_HOST", "junkpile")
-    XTTS_PROJECT = "~/Projects/bt7274"
-    XTTS_VENV = "#{XTTS_PROJECT}/.venv/bin/python"
-    XTTS_SPEAKER = "#{XTTS_PROJECT}/finetune_output/bt7274_polish_speaker.pth"
-    XTTS_REFERENCE = "#{XTTS_PROJECT}/bt_voices/diag_sp_spoke1pre_BE361_10_01_mcor_bt.wav"
+    XTTS_PORT = ENV.fetch("XTTS_PORT", "5002")
+    XTTS_URL = "http://#{XTTS_HOST}:#{XTTS_PORT}"
 
-    # Backend selection
-    BACKEND = ENV.fetch("TTS_BACKEND", "xtts") # "piper" or "xtts"
+    # Backend selection: "auto" selects based on language (pl=xtts, en=piper)
+    BACKEND = ENV.fetch("TTS_BACKEND", "auto") # "piper", "xtts", or "auto"
 
     PIPER_VOICES_BASE_URL = "https://huggingface.co/rhasspy/piper-voices/resolve/main"
+
+    # Audio padding (matches XTTS server)
+    PADDING_MS = 250
 
     class << self
       # --- Synthesis & Playback ---
@@ -37,7 +38,10 @@ module Personality
 
         FileUtils.mkdir_p(DATA_DIR)
 
-        result = if BACKEND == "xtts"
+        # Select backend: auto mode uses XTTS for Polish, piper for English
+        backend = select_backend(language)
+
+        result = if backend == "xtts"
           synthesize_xtts(text, voice: voice, language: language)
         else
           synthesize_piper(text, voice: voice)
@@ -52,7 +56,7 @@ module Personality
         pid = spawn(player, WAV_FILE, [:out, :err] => "/dev/null")
         save_pid(pid)
 
-        {speaking: true, voice: voice, pid: pid, backend: BACKEND}
+        {speaking: true, voice: voice, pid: pid, backend: backend}
       end
 
       def speak_and_wait(text, voice: nil, language: nil)
@@ -144,96 +148,45 @@ module Personality
       # --- XTTS Backend ---
 
       def synthesize_xtts(text, voice:, language:)
-        # Escape text for shell
-        escaped_text = text.gsub("'", "'\\''")
+        uri = URI.parse("#{XTTS_URL}/synthesize")
 
-        # Build Python command for XTTS synthesis
-        python_script = <<~PYTHON
-          import sys
-          import torch
-          from TTS.api import TTS
+        request = Net::HTTP::Post.new(uri)
+        request["Content-Type"] = "application/json"
+        request.body = JSON.generate({text: text, language: language})
 
-          text = '''#{escaped_text}'''
-          language = '#{language}'
-
-          tts = TTS("tts_models/multilingual/multi-dataset/xtts_v2").to("cuda")
-          model = tts.synthesizer.tts_model
-
-          # Try to load speaker embedding, fall back to reference audio
-          try:
-              speaker = torch.load("#{XTTS_SPEAKER}")
-              out = model.inference(
-                  text=text,
-                  language=language,
-                  gpt_cond_latent=speaker["gpt_cond_latent"],
-                  speaker_embedding=speaker["speaker_embedding"],
-                  temperature=0.7
-              )
-          except:
-              # Fall back to reference audio
-              tts.tts_to_file(
-                  text=text,
-                  file_path="/tmp/xtts_output.wav",
-                  speaker_wav="#{XTTS_REFERENCE}",
-                  language=language
-              )
-              sys.exit(0)
-
-          import torchaudio
-          torchaudio.save("/tmp/xtts_output.wav", torch.tensor(out["wav"]).unsqueeze(0), 24000)
-        PYTHON
-
-        # Execute on remote host
-        ssh_cmd = [
-          "ssh", XTTS_HOST,
-          "cd #{XTTS_PROJECT} && source .venv/bin/activate && python3 -c '#{python_script.gsub("'", "'\\''")}'"
-        ]
-
-        _, stderr, status = Open3.capture3(*ssh_cmd)
-
-        unless status.success?
-          return {error: "XTTS synthesis failed: #{stderr}"}
+        response = Net::HTTP.start(uri.host, uri.port, read_timeout: 30) do |http|
+          http.request(request)
         end
 
-        # Copy WAV back
-        scp_cmd = ["scp", "#{XTTS_HOST}:/tmp/xtts_output.wav", WAV_FILE]
-        _, stderr, status = Open3.capture3(*scp_cmd)
-
-        unless status.success?
-          return {error: "Failed to copy audio: #{stderr}"}
+        unless response.is_a?(Net::HTTPSuccess)
+          return {error: "XTTS synthesis failed: #{response.code} #{response.body}"}
         end
 
+        File.open(WAV_FILE, "wb") { |f| f.write(response.body) }
         {synthesized: true}
+      rescue Errno::ECONNREFUSED
+        {error: "XTTS server not running on #{XTTS_HOST}:#{XTTS_PORT}"}
+      rescue Net::ReadTimeout
+        {error: "XTTS synthesis timed out"}
       end
 
       def xtts_voice_available?(name)
-        # Check if speaker embedding exists on junkpile
-        cmd = "ssh #{XTTS_HOST} 'test -f #{XTTS_PROJECT}/finetune_output/#{name}_speaker.pth && echo yes || echo no'"
-        result, = Open3.capture2(cmd)
-
-        # bt7274 is the default voice with special path
-        return true if name == "bt7274"
-
-        result.strip == "yes"
+        # bt7274 is the only trained voice currently
+        name == "bt7274"
       end
 
       def list_xtts_voices
-        # List available speaker embeddings
-        cmd = "ssh #{XTTS_HOST} 'ls #{XTTS_PROJECT}/finetune_output/*_speaker.pth 2>/dev/null || true'"
-        result, = Open3.capture2(cmd)
+        # Check if server is healthy
+        uri = URI.parse("#{XTTS_URL}/health")
+        response = Net::HTTP.get_response(uri)
 
-        voices = result.lines.map do |line|
-          name = File.basename(line.strip, "_speaker.pth")
-          name = "bt7274" if name == "bt7274_polish"
-          {name: name, path: line.strip, backend: "xtts"}
-        end
-
-        # Always include bt7274 if embedding exists
-        if voices.empty?
-          [{name: "bt7274", path: XTTS_SPEAKER, backend: "xtts"}]
+        if response.is_a?(Net::HTTPSuccess)
+          [{name: "bt7274", backend: "xtts", server: "#{XTTS_HOST}:#{XTTS_PORT}"}]
         else
-          voices.uniq { |v| v[:name] }
+          []
         end
+      rescue Errno::ECONNREFUSED
+        []
       end
 
       # --- Piper Backend ---
@@ -245,14 +198,33 @@ module Personality
         piper_bin = find_piper
         return {error: "piper not installed"} unless piper_bin
 
+        raw_wav = "#{WAV_FILE}.raw"
         _, stderr, status = Open3.capture3(
-          piper_bin, "--model", model_path, "--output_file", WAV_FILE,
+          piper_bin, "--model", model_path, "--output_file", raw_wav,
           stdin_data: text
         )
 
         return {error: "piper failed: #{stderr}"} unless status.success?
 
+        # Add 250ms silence at start (matches XTTS padding)
+        add_silence_padding(raw_wav, WAV_FILE)
+
         {synthesized: true}
+      end
+
+      def add_silence_padding(input_wav, output_wav)
+        sox_bin = `which sox 2>/dev/null`.strip
+        padding_sec = PADDING_MS / 1000.0
+
+        if !sox_bin.empty? && File.executable?(sox_bin)
+          # Use sox to pad silence at start
+          system(sox_bin, input_wav, output_wav, "pad", padding_sec.to_s, "0",
+            [:out, :err] => "/dev/null")
+          FileUtils.rm_f(input_wav)
+        else
+          # Fallback: just rename (no padding)
+          FileUtils.mv(input_wav, output_wav)
+        end
       end
 
       def find_piper
@@ -316,6 +288,13 @@ module Personality
         elsif system("which aplay > /dev/null 2>&1")
           "aplay"
         end
+      end
+
+      def select_backend(language)
+        return BACKEND unless BACKEND == "auto"
+
+        # Polish uses XTTS (trained voice), English uses piper (fast)
+        language == "pl" ? "xtts" : "piper"
       end
 
       def save_pid(pid)

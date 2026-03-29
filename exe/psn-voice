@@ -1,0 +1,7 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+require "personality"
+require "personality/mcp/voice_server"
+
+Personality::MCP::VoiceServer.run
